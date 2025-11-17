@@ -56,48 +56,27 @@ const handler = async (req: Request): Promise<Response> => {
     let targetUserId: string | null = null;
     let sentViaBackend = false;
 
-    // 1) Tentar inviteUserByEmail (envia automaticamente e-mail correto pelo backend do Supabase)
+    // 1) Não usar mais inviteUserByEmail para evitar wrapping de links – apenas preparar user/role se já existir
     try {
-      const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo,
-      });
-
-      if (!inviteError && inviteData?.user?.id) {
-        targetUserId = inviteData.user.id;
-        sentViaBackend = true;
-        console.log('Backend invite successful:', targetUserId);
-
-        // Atualizar profile e role
-        await supabase.from('profiles').upsert({ id: targetUserId, email, full_name: email.split('@')[0] }, { onConflict: 'id' });
-        await supabase.from('user_roles').upsert({ user_id: targetUserId, role }, { onConflict: 'user_id,role' });
-
-        return new Response(
-          JSON.stringify({ success: true, user_id: targetUserId, email, method: 'backend_invite' }),
-          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // Se erro = usuário já existe, seguir para magic link
-      if (inviteError) {
-        const code = (inviteError as any)?.code || (inviteError as any)?.error?.code;
-        const status = (inviteError as any)?.status || (inviteError as any)?.error?.status;
-        if (code === 'email_exists' || status === 422) {
-          console.log('Usuário já existe, usando magic link fallback');
-          const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers();
-          if (listErr) throw new Error('Falha ao listar usuários');
-          
-          const existingUser = users.find(u => u.email === email);
-          if (!existingUser) throw new Error('Usuário existe mas não foi encontrado');
-          
+      const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers();
+      if (listErr) {
+        console.error('Falha ao listar usuários (não bloqueante):', listErr);
+      } else {
+        const existingUser = users.find(u => u.email === email);
+        if (existingUser?.id) {
           targetUserId = existingUser.id;
-          await supabase.from('profiles').upsert({ id: targetUserId, email, full_name: email.split('@')[0] }, { onConflict: 'id' });
-          await supabase.from('user_roles').upsert({ user_id: targetUserId, role }, { onConflict: 'user_id,role' });
-        } else {
-          throw inviteError;
+          await supabase.from('profiles').upsert(
+            { id: targetUserId, email, full_name: email.split('@')[0] },
+            { onConflict: 'id' }
+          );
+          await supabase.from('user_roles').upsert(
+            { user_id: targetUserId, role },
+            { onConflict: 'user_id,role' }
+          );
         }
       }
     } catch (err) {
-      console.error('Erro inesperado no backend invite:', err);
+      console.error('Erro ao preparar usuário existente:', err);
     }
 
     // 2) Fallback: gerar magic link e tentar enviar via Resend
@@ -121,6 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
         from: 'Convite Casamento <onboarding@resend.dev>',
         to: [email],
         subject: 'Convite para Painel Administrativo - Beatriz & Diogo',
+        text: `Acesse o painel: ${linkData.properties.action_link}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #4F46E5;">Você foi convidado!</h2>
