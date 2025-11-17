@@ -50,138 +50,130 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Inviting user: ${email} with role: ${role}`);
 
-    // Prefer official invite: creates the user (if needed) and sends email
-    let targetUserId: string | null = null;
+    // Get the origin for redirect
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || '';
+    console.log(`Redirect origin: ${origin}`);
 
-    try {
-      const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${req.headers.get("origin")}/auth`,
+    let userId: string;
+    let isNewUser = false;
+
+    // First, check if user already exists
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers.users.find(u => u.email === email);
+
+    if (existingUser) {
+      console.log(`User already exists: ${existingUser.id}`);
+      userId = existingUser.id;
+      isNewUser = false;
+    } else {
+      // Create new user without sending email
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: {
+          full_name: email.split('@')[0],
+        },
       });
 
-      if (!inviteError && inviteData?.user?.id) {
-        targetUserId = inviteData.user.id;
-        console.log("Backend invite sent successfully:", targetUserId);
-
-        // Ensure profile and role (idempotent)
-        const { error: upsertProfileError } = await supabase
-          .from('profiles')
-          .upsert(
-            { id: targetUserId, email },
-            { onConflict: 'id', ignoreDuplicates: false }
-          );
-        if (upsertProfileError) {
-          console.error('Error upserting profile:', upsertProfileError);
-        }
-
-        const { error: upsertRoleError } = await supabase
-          .from('user_roles')
-          .upsert(
-            { user_id: targetUserId, role },
-            { onConflict: 'user_id,role' }
-          );
-        if (upsertRoleError) {
-          console.error("Error assigning role:", upsertRoleError);
-        }
-
-        return new Response(
-          JSON.stringify({ success: true, user_id: targetUserId, email, method: "backend_invite" }),
-          {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json",
-              ...corsHeaders,
-            },
-          }
-        );
+      if (createError) {
+        console.error('Error creating user:', createError);
+        throw createError;
       }
 
-      // If the user already exists, continue with magic link flow below
-      if (inviteError) {
-        const code = (inviteError as any)?.code || (inviteError as any)?.error?.code;
-        const status = (inviteError as any)?.status || (inviteError as any)?.error?.status;
-        if (code === 'email_exists' || status === 422) {
-          console.log("User already exists, proceeding with reinvite flow");
-          const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-          if (listError) {
-            console.error('Error listing users:', listError);
-            throw new Error('Failed to find existing user');
-          }
-          const existingUser = users.find(u => u.email === email);
-          if (existingUser) {
-            targetUserId = existingUser.id;
-            console.log("Found existing user:", targetUserId);
-          } else {
-            throw new Error('User exists but could not be found');
-          }
-
-          // Ensure profile and role (idempotent)
-          const { error: upsertProfileError } = await supabase
-            .from('profiles')
-            .upsert(
-              { id: targetUserId, email },
-              { onConflict: 'id', ignoreDuplicates: false }
-            );
-          if (upsertProfileError) console.error('Error upserting profile:', upsertProfileError);
-
-          const { error: upsertRoleError } = await supabase
-            .from('user_roles')
-            .upsert(
-              { user_id: targetUserId, role },
-              { onConflict: 'user_id,role' }
-            );
-          if (upsertRoleError) console.error("Error assigning role:", upsertRoleError);
-        } else {
-          throw inviteError;
-        }
-      }
-    } catch (inviteUnexpectedErr) {
-      console.error("Unexpected error in inviteUserByEmail:", inviteUnexpectedErr);
-      // Will fallback to magic link + Resend below
+      userId = newUser.user.id;
+      isNewUser = true;
+      console.log(`New user created: ${userId}`);
     }
 
-    // Generate a magic link for the user to access and set password if needed
-    const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
+    // Update or create profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: email,
+        full_name: email.split('@')[0],
+      });
+
+    if (profileError) {
+      console.error('Profile error:', profileError);
+    }
+
+    // Update or create role
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .upsert({
+        user_id: userId,
+        role: role,
+      });
+
+    if (roleError) {
+      console.error('Role error:', roleError);
+      throw roleError;
+    }
+
+    // Generate magic link pointing to /admin
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${req.headers.get("origin")}/auth`,
+        redirectTo: `${origin}/admin`,
       },
     });
 
-    if (resetError) {
-      console.error("Error generating reset link:", resetError);
-      throw resetError;
+    if (linkError) {
+      console.error('Error generating magic link:', linkError);
+      throw linkError;
     }
 
-    // Send custom invitation email with Resend (do not fail if Resend key is invalid)
+    console.log(`Magic link generated for: ${userId}`);
+
+    // Send email via Resend
+    let emailSent = false;
     try {
-      const emailResponse = await resend.emails.send({
-        from: "Convite de Casamento <onboarding@resend.dev>",
+      const { data: emailData, error: emailError } = await resend.emails.send({
+        from: 'Convite Casamento <onboarding@resend.dev>',
         to: [email],
-        subject: "Convite para administrar o site de casamento",
+        subject: 'Convite para Painel Administrativo - Beatriz & Diogo',
         html: `
-          <h1>Você foi convidado!</h1>
-          <p>Você foi convidado para ser <strong>${role === 'admin' ? 'administrador' : role === 'couple' ? 'do casal' : 'cerimonialista'}</strong> do site de casamento.</p>
-          <p>Clique no link abaixo para definir sua senha e acessar o painel administrativo:</p>
-          <p><a href="${resetData.properties.action_link}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Definir Senha e Acessar</a></p>
-          <p>Ou copie e cole este link no seu navegador:</p>
-          <p style="word-break: break-all; color: #666;">${resetData.properties.action_link}</p>
-          <br>
-          <p>Atenciosamente,</p>
-          <p><strong>Equipe do Casamento</strong></p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #4F46E5;">Você foi convidado!</h2>
+            <p>Você foi convidado para acessar o painel administrativo do casamento de Beatriz & Diogo.</p>
+            <p>Seu papel: <strong>${role === 'admin' ? 'Administrador' : role === 'couple' ? 'Casal' : 'Cerimonialista'}</strong></p>
+            <p>Clique no botão abaixo para acessar:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${linkData.properties.action_link}" 
+                 style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Acessar Painel Administrativo
+              </a>
+            </div>
+            <p style="color: #666; font-size: 14px;">Ou copie e cole este link no navegador:</p>
+            <p style="word-break: break-all; color: #4F46E5; font-size: 12px;">${linkData.properties.action_link}</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="color: #999; font-size: 12px;">Este link expira em 1 hora por motivos de segurança.</p>
+          </div>
         `,
       });
-      console.log("Email send attempt response:", emailResponse);
+
+      if (!emailError) {
+        emailSent = true;
+        console.log('Email sent successfully:', emailData);
+      } else {
+        console.error('Error sending email:', emailError);
+      }
     } catch (emailErr) {
-      console.error('Resend email error (non-blocking):', emailErr);
+      console.error('Resend error (non-blocking):', emailErr);
     }
+
+    console.log(`Invite process completed successfully for: ${userId}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user_id: targetUserId, 
+        userId,
         email,
-        magic_link: resetData.properties.action_link 
+        isNewUser,
+        magic_link: linkData.properties.action_link,
+        email_sent: emailSent
       }),
       {
         status: 200,
