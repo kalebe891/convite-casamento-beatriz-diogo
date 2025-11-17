@@ -13,26 +13,17 @@ const AuthCallback = () => {
       try {
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
-        const type = url.searchParams.get("type");
 
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(window.location.href);
-          if (error) throw error;
-          setStatus("success");
-          navigate("/admin", { replace: true });
+        if (!code) {
+          setStatus("error");
           return;
         }
 
-        // Fallback: for links that include access_token in the hash
-        setTimeout(async () => {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            setStatus("success");
-            navigate("/admin", { replace: true });
-          } else {
-            setStatus("error");
-          }
-        }, 0);
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) throw error;
+
+        setStatus("success");
+        navigate("/admin", { replace: true });
       } catch (err: any) {
         console.error("Auth callback error:", err);
         setStatus("error");
