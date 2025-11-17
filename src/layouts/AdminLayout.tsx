@@ -7,46 +7,31 @@ import { AppSidebar } from "@/components/admin/AppSidebar";
 import { LogOut, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useRequireRole } from "@/hooks/useRequireRole";
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { user, role, loading } = useRequireRole(["admin", "couple", "planner"]);
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
-      } else {
-        // Fetch user profile
-        supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', session.user.id)
-          .single()
-          .then(({ data }) => {
-            if (data?.full_name) {
-              setUserName(data.full_name);
-            } else {
-              setUserName(session.user.email?.split('@')[0] || 'Usuário');
-            }
-          });
-      }
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    if (user) {
+      // Fetch user profile
+      supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.full_name) {
+            setUserName(data.full_name);
+          } else {
+            setUserName(user.email?.split('@')[0] || 'Usuário');
+          }
+        });
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -86,7 +71,9 @@ const AdminLayout = () => {
             <div className="flex items-center gap-4">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-medium">{userName}</p>
-                <p className="text-xs text-muted-foreground">Administrador</p>
+                <p className="text-xs text-muted-foreground">
+                  {role === "admin" ? "Administrador" : role === "couple" ? "Casal" : "Cerimonialista"}
+                </p>
               </div>
               <ThemeToggle />
               <Button variant="outline" onClick={() => navigate("/")} size="sm">
