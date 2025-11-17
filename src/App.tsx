@@ -10,6 +10,7 @@ import AdminLayout from "./layouts/AdminLayout";
 import Invitation from "./pages/Invitation";
 import NotFound from "./pages/NotFound";
 import AccessDenied from "./pages/AccessDenied";
+import CriarSenha from "./pages/CriarSenha";
 import Usuarios from "./pages/admin/Usuarios";
 import Convidados from "./pages/admin/Convidados";
 import Cronograma from "./pages/admin/Cronograma";
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/criar-senha" element={<CriarSenha />} />
           <Route path="/acesso-negado" element={<AccessDenied />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Cronograma />} />

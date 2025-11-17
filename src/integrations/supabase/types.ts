@@ -108,6 +108,39 @@ export type Database = {
           },
         ]
       }
+      pending_users: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          nome: string | null
+          papel: string
+          token: string
+          usado: boolean
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          nome?: string | null
+          papel: string
+          token?: string
+          usado?: boolean
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          nome?: string | null
+          papel?: string
+          token?: string
+          usado?: boolean
+        }
+        Relationships: []
+      }
       photos: {
         Row: {
           caption: string | null
