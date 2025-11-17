@@ -20,6 +20,7 @@ const UsersManager = () => {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "couple" | "planner">("admin");
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +40,7 @@ const UsersManager = () => {
 
       setEmail("");
       setRole("admin");
+      setRefreshKey((k) => k + 1);
     } catch (error: any) {
       console.error("Error inviting user:", error);
       toast({
@@ -106,7 +108,7 @@ const UsersManager = () => {
         </CardContent>
       </Card>
 
-      <UsersList />
+      <UsersList key={refreshKey} />
     </div>
   );
 };
