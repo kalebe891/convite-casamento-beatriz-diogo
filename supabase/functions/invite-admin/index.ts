@@ -50,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Inviting user: ${email} with role: ${role}`);
 
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || '';
-    const redirectTo = `${origin}/auth`;
+    const redirectTo = `${origin}/auth/callback`;
     console.log(`Redirect URL: ${redirectTo}`);
 
     let targetUserId: string | null = null;
