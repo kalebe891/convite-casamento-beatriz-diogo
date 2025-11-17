@@ -14,6 +14,7 @@ const corsHeaders = {
 
 interface InviteRequest {
   email: string;
+  nome?: string;
   role: 'admin' | 'couple' | 'planner';
 }
 
@@ -46,98 +47,74 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("User is not an admin");
     }
 
-    const { email, role }: InviteRequest = await req.json();
-    console.log(`Inviting user: ${email} with role: ${role}`);
+    const { email, nome, role }: InviteRequest = await req.json();
+    console.log(`Creating invitation for: ${email} with role: ${role}`);
 
+    // Create pending user
+    const { data: pendingUser, error: pendingError } = await supabase
+      .from('pending_users')
+      .insert({
+        email,
+        nome: nome || email.split('@')[0],
+        papel: role,
+      })
+      .select()
+      .single();
+
+    if (pendingError) {
+      console.error('Error creating pending user:', pendingError);
+      throw pendingError;
+    }
+
+    console.log('Pending user created:', pendingUser.id);
+
+    // Generate invitation link
     const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || '';
-    const redirectTo = `${origin}/auth/callback`;
-    console.log(`Redirect URL: ${redirectTo}`);
+    const invitationLink = `${origin}/criar-senha?t=${pendingUser.token}`;
 
-    let targetUserId: string | null = null;
-    let sentViaBackend = false;
-
-    // 1) Não usar mais inviteUserByEmail para evitar wrapping de links – apenas preparar user/role se já existir
-    try {
-      const { data: { users }, error: listErr } = await supabase.auth.admin.listUsers();
-      if (listErr) {
-        console.error('Falha ao listar usuários (não bloqueante):', listErr);
-      } else {
-        const existingUser = users.find(u => u.email === email);
-        if (existingUser?.id) {
-          targetUserId = existingUser.id;
-          await supabase.from('profiles').upsert(
-            { id: targetUserId, email, full_name: email.split('@')[0] },
-            { onConflict: 'id' }
-          );
-          await supabase.from('user_roles').upsert(
-            { user_id: targetUserId, role },
-            { onConflict: 'user_id,role' }
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Erro ao preparar usuário existente:', err);
-    }
-
-    // 2) Fallback: gerar magic link e tentar enviar via Resend
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo },
-    });
-
-    if (linkError) {
-      console.error('Erro ao gerar magic link:', linkError);
-      throw linkError;
-    }
-
-    console.log('Magic link gerado para:', targetUserId || 'novo usuário');
-
-    // Tentar enviar via Resend
+    // Try to send email via Resend
     let emailSent = false;
     try {
       const mailResp = await resend.emails.send({
         from: 'Convite Casamento <onboarding@resend.dev>',
         to: [email],
         subject: 'Convite para Painel Administrativo - Beatriz & Diogo',
-        text: `Acesse o painel: ${linkData.properties.action_link}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #4F46E5;">Você foi convidado!</h2>
+            <p>Olá, ${nome || 'usuário'}!</p>
+            <p>Você foi convidado para acessar o painel administrativo do casamento.</p>
             <p>Seu papel: <strong>${role === 'admin' ? 'Administrador' : role === 'couple' ? 'Casal' : 'Cerimonialista'}</strong></p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${linkData.properties.action_link}" 
+              <a href="${invitationLink}" 
                  style="background-color: #4F46E5; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                Acessar Painel
+                Criar Senha e Acessar
               </a>
             </div>
-            <p style="color: #666; font-size: 14px;">Ou copie:</p>
-            <p style="word-break: break-all; color: #4F46E5; font-size: 12px;">${linkData.properties.action_link}</p>
+            <p style="color: #666; font-size: 14px;">Ou copie o link abaixo:</p>
+            <p style="word-break: break-all; color: #4F46E5; font-size: 12px;">${invitationLink}</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="color: #999; font-size: 12px;">Link expira em 1 hora.</p>
+            <p style="color: #999; font-size: 12px;">Este link expira em 48 horas.</p>
           </div>
         `,
       });
       if (!(mailResp as any)?.error) {
         emailSent = true;
-        console.log('Email enviado via Resend');
+        console.log('Email sent via Resend');
       } else {
-        console.error('Erro Resend:', (mailResp as any).error);
+        console.error('Resend error:', (mailResp as any).error);
       }
     } catch (emailErr) {
-      console.error('Erro ao enviar email (não bloqueante):', emailErr);
+      console.error('Error sending email (non-blocking):', emailErr);
     }
-
-    console.log('Convite finalizado para:', targetUserId);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user_id: targetUserId, 
         email, 
-        magic_link: linkData.properties.action_link, 
-        email_sent: emailSent, 
-        method: 'magiclink_fallback' 
+        invitation_link: invitationLink,
+        email_sent: emailSent,
+        expires_in_hours: 48,
       }),
       {
         status: 200,

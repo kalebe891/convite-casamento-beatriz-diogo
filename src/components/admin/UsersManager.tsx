@@ -25,36 +25,57 @@ const UsersManager = () => {
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!email || !role) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha o email e selecione um papel.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
+    setMagicLink(null);
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        throw new Error("Você precisa estar autenticado");
+      }
+
       const { data, error } = await supabase.functions.invoke("invite-admin", {
-        body: { email, role },
+        body: { email, role, nome: email.split('@')[0] },
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
       });
 
       if (error) throw error;
 
-      if (data?.magic_link) {
-        setMagicLink(data.magic_link);
-        toast({
-          title: "Convite processado!",
-          description: `Link de acesso gerado. ${data.method === 'backend_invite' ? 'Email enviado com sucesso.' : 'Copie o link abaixo para enviar manualmente.'}`,
-        });
-      } else {
-        toast({
-          title: "Convite enviado!",
-          description: `Um convite foi enviado para ${email}`,
-        });
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      toast({
+        title: "Convite criado",
+        description: data?.email_sent 
+          ? `Convite enviado por e-mail para ${email}` 
+          : `Convite criado para ${email}. Copie o link abaixo.`,
+      });
+
+      if (data?.invitation_link) {
+        setMagicLink(data.invitation_link);
       }
 
       setEmail("");
       setRole("admin");
-      setRefreshKey((k) => k + 1);
+      setRefreshKey((prev) => prev + 1);
     } catch (error: any) {
       console.error("Error inviting user:", error);
       toast({
-        title: "Erro ao enviar convite",
-        description: error.message,
+        title: "Erro ao criar convite",
+        description: error.message || "Não foi possível criar o convite.",
         variant: "destructive",
       });
     } finally {
@@ -141,8 +162,9 @@ const UsersManager = () => {
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
               <li>Digite o e-mail do usuário que deseja convidar</li>
               <li>Selecione o tipo de acesso apropriado</li>
-              <li>O usuário receberá um e-mail com instruções para criar a senha</li>
-              <li>Após criar a senha, ele poderá acessar o painel administrativo</li>
+              <li>Um email será enviado com link para criar senha (válido por 48h)</li>
+              <li>O usuário cria uma senha e é redirecionado para login</li>
+              <li>Se o email não for entregue, copie o link e envie manualmente</li>
             </ol>
           </div>
         </CardContent>
