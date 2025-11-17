@@ -135,6 +135,34 @@ const handler = async (req: Request): Promise<Response> => {
       } else {
         console.log("Role ensured successfully");
       }
+
+      // Try sending the official invite email via backend mailer (preferred channel)
+      try {
+        const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
+          redirectTo: `${req.headers.get("origin")}/auth`,
+        });
+
+        if (inviteError) {
+          // Will fallback to magic link + Resend below
+          console.error("inviteUserByEmail error (fallback to magic link):", inviteError);
+        } else {
+          console.log("inviteUserByEmail sent successfully for:", inviteData?.user?.id);
+
+          return new Response(
+            JSON.stringify({ success: true, user_id: targetUserId, email, method: "backend_invite" }),
+            {
+              status: 200,
+              headers: {
+                "Content-Type": "application/json",
+                ...corsHeaders,
+              },
+            }
+          );
+        }
+      } catch (inviteUnexpectedErr) {
+        console.error("Unexpected error in inviteUserByEmail:", inviteUnexpectedErr);
+        // Will fallback to magic link + Resend below
+      }
     }
 
     // Generate a magic link for the user to access and set password if needed
