@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import AdminLayout from "./layouts/AdminLayout";
 import Invitation from "./pages/Invitation";
 import NotFound from "./pages/NotFound";
+import AccessDenied from "./pages/AccessDenied";
 import Usuarios from "./pages/admin/Usuarios";
 import Convidados from "./pages/admin/Convidados";
 import Cronograma from "./pages/admin/Cronograma";
@@ -27,6 +28,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/acesso-negado" element={<AccessDenied />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Cronograma />} />
             <Route path="usuarios" element={<Usuarios />} />
