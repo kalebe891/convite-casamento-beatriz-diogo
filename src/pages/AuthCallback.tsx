@@ -1,49 +1,29 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) throw error;
-        
-        if (data.session) {
-          setStatus("success");
-          navigate("/admin", { replace: true });
-        } else {
-          setStatus("error");
-        }
-      } catch (err: any) {
-        console.error("Auth callback error:", err);
-        setStatus("error");
-      }
-    };
-    run();
-  }, [navigate]);
+    // Pegar o token da URL
+    const token = searchParams.get("token_hash") || searchParams.get("token");
+    const type = searchParams.get("type");
 
-  useEffect(() => {
-    if (status === "error") {
-      toast({
-        title: "Não foi possível autenticar",
-        description: "O link pode ter expirado ou já foi utilizado. Solicite um novo convite.",
-        variant: "destructive",
-      });
+    if (type === "signup" && token) {
+      // Redirecionar para criar senha com o token
+      navigate(`/criar-senha?token=${token}`, { replace: true });
+    } else {
+      // Se não for signup, redirecionar para login
+      navigate("/auth", { replace: true });
     }
-  }, [status, toast]);
+  }, [navigate, searchParams]);
 
   return (
     <main className="min-h-screen grid place-items-center">
       <section className="text-center space-y-2">
-        <h1 className="text-2xl font-serif">Confirmando acesso…</h1>
-        <p className="text-muted-foreground">Aguarde um instante enquanto validamos o convite.</p>
+        <h1 className="text-2xl font-serif">Redirecionando…</h1>
+        <p className="text-muted-foreground">Aguarde um instante.</p>
       </section>
     </main>
   );

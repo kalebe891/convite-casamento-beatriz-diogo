@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -50,13 +50,17 @@ const handler = async (req: Request): Promise<Response> => {
     const { email, nome, role }: InviteRequest = await req.json();
     console.log(`Creating invitation for: ${email} with role: ${role}`);
 
-    // Create pending user
+    // Create or update pending user (email is now the PK)
     const { data: pendingUser, error: pendingError } = await supabase
       .from('pending_users')
-      .insert({
+      .upsert({
         email,
         nome: nome || email.split('@')[0],
         papel: role,
+        usado: false,
+        created_at: new Date().toISOString(),
+      }, {
+        onConflict: 'email'
       })
       .select()
       .single();

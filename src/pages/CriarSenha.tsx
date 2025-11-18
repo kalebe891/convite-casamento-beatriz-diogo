@@ -62,28 +62,39 @@ const CriarSenha = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("complete-invitation", {
-        body: {
-          token,
-          password,
-          nome,
-        },
+      // Verificar o token OTP e criar a sessão
+      const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+        type: 'signup',
+        token_hash: token!,
       });
 
-      if (error) throw error;
+      if (verifyError) throw verifyError;
+      if (!verifyData.session) throw new Error("Não foi possível criar a sessão");
 
-      if (data?.error) {
-        throw new Error(data.error);
-      }
+      // Atualizar a senha do usuário
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (updateError) throw updateError;
+
+      // Atualizar o perfil com o nome
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: nome })
+        .eq('id', verifyData.user.id);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Conta criada com sucesso!",
-        description: "Você será redirecionado para fazer login.",
+        description: "Redirecionando para o painel administrativo...",
       });
 
+      // Redirecionar para o admin
       setTimeout(() => {
-        navigate("/auth");
-      }, 1500);
+        navigate("/admin", { replace: true });
+      }, 1000);
     } catch (error: any) {
       console.error("Error completing invitation:", error);
       toast({
