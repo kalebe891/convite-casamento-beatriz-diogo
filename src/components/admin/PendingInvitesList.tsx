@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Copy, Mail, MessageCircle, RefreshCw, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Copy, Mail, MessageCircle, RefreshCw, Clock, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -35,17 +35,36 @@ const PendingInvitesList = ({ refreshTrigger }: PendingInvitesListProps) => {
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchInvites = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar convites pendentes
+      const { data: pendingData, error: pendingError } = await supabase
         .from("pending_users")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setInvites(data || []);
+      if (pendingError) throw pendingError;
+
+      // Buscar emails de usuários já cadastrados
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("email");
+
+      if (profilesError) throw profilesError;
+
+      // Filtrar convites de usuários que já existem
+      const existingEmails = new Set(
+        profilesData?.map(p => p.email?.toLowerCase()).filter(Boolean) || []
+      );
+
+      const filteredInvites = (pendingData || []).filter(
+        invite => !existingEmails.has(invite.email.toLowerCase())
+      );
+
+      setInvites(filteredInvites);
     } catch (error: any) {
       console.error("Error fetching pending invites:", error);
       toast({
@@ -113,6 +132,34 @@ const PendingInvitesList = ({ refreshTrigger }: PendingInvitesListProps) => {
       });
     } finally {
       setResendingId(null);
+    }
+  };
+
+  const deleteInvite = async (email: string, id: string) => {
+    setDeletingId(id);
+    try {
+      const { error } = await supabase
+        .from("pending_users")
+        .delete()
+        .eq("email", email);
+
+      if (error) throw error;
+
+      toast({
+        title: "Convite excluído",
+        description: `O convite para ${email} foi removido.`,
+      });
+
+      fetchInvites();
+    } catch (error: any) {
+      console.error("Error deleting invite:", error);
+      toast({
+        title: "Erro ao excluir convite",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -257,6 +304,20 @@ const PendingInvitesList = ({ refreshTrigger }: PendingInvitesListProps) => {
                           <RefreshCw className="w-4 h-4 animate-spin" />
                         ) : (
                           <Mail className="w-4 h-4" />
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteInvite(invite.email, invite.id)}
+                        disabled={deletingId === invite.id}
+                        title="Excluir convite"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        {deletingId === invite.id ? (
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
                         )}
                       </Button>
                     </div>
