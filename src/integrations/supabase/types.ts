@@ -404,6 +404,7 @@ export type Database = {
           display_order: number | null
           id: string
           is_public: boolean | null
+          observation: string | null
           time: string
           wedding_id: string | null
         }
@@ -413,6 +414,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_public?: boolean | null
+          observation?: string | null
           time: string
           wedding_id?: string | null
         }
@@ -422,6 +424,7 @@ export type Database = {
           display_order?: number | null
           id?: string
           is_public?: boolean | null
+          observation?: string | null
           time?: string
           wedding_id?: string | null
         }

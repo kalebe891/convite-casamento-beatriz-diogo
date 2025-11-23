@@ -14,7 +14,7 @@ const TimelineManager = () => {
   const { toast } = useToast();
   const [events, setEvents] = useState<any[]>([]);
   const [weddingId, setWeddingId] = useState<string | null>(null);
-  const [newEvent, setNewEvent] = useState({ time: "", activity: "", is_public: true });
+  const [newEvent, setNewEvent] = useState({ time: "", activity: "", observation: "", is_public: true });
 
   useEffect(() => {
     fetchData();
@@ -56,6 +56,7 @@ const TimelineManager = () => {
       wedding_id: weddingId,
       time: validationResult.data.time.trim(),
       activity: validationResult.data.activity.trim(),
+      observation: newEvent.observation.trim() || null,
       is_public: newEvent.is_public,
       display_order: events.length,
     });
@@ -64,7 +65,7 @@ const TimelineManager = () => {
       toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
     } else {
       toast({ title: "Sucesso", description: "Evento adicionado!" });
-      setNewEvent({ time: "", activity: "", is_public: true });
+      setNewEvent({ time: "", activity: "", observation: "", is_public: true });
       fetchData();
     }
   };
@@ -117,6 +118,14 @@ const TimelineManager = () => {
               onChange={(e) => setNewEvent({ ...newEvent, activity: e.target.value })}
             />
           </div>
+          <div>
+            <Label>Observação (opcional)</Label>
+            <Input
+              placeholder="Ex: Traje formal"
+              value={newEvent.observation}
+              onChange={(e) => setNewEvent({ ...newEvent, observation: e.target.value })}
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Switch
               checked={newEvent.is_public}
@@ -145,6 +154,9 @@ const TimelineManager = () => {
                   <div className="flex-1">
                     <p className="font-semibold">{event.time}</p>
                     <p className="text-muted-foreground">{event.activity}</p>
+                    {event.observation && (
+                      <p className="text-sm text-muted-foreground mt-1 italic">{event.observation}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
