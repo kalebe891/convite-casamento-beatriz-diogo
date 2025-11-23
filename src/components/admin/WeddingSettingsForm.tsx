@@ -15,6 +15,8 @@ const WeddingSettingsForm = () => {
   const [formData, setFormData] = useState({
     venue_map_url: "",
     couple_message: "",
+    show_guest_list_public: false,
+    show_rsvp_status_public: false,
   });
 
   useEffect(() => {
@@ -32,6 +34,8 @@ const WeddingSettingsForm = () => {
       setFormData({
         venue_map_url: data.venue_map_url || "",
         couple_message: data.couple_message || "",
+        show_guest_list_public: data.show_guest_list_public || false,
+        show_rsvp_status_public: data.show_rsvp_status_public || false,
       });
     }
   };
@@ -95,6 +99,36 @@ const WeddingSettingsForm = () => {
               onChange={(e) => setFormData({ ...formData, couple_message: e.target.value })}
               rows={4}
             />
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="show_guest_list_public">Exibir Lista de Convidados Publicamente</Label>
+                <p className="text-sm text-muted-foreground">
+                  Mostra os nomes dos convidados confirmados na página pública
+                </p>
+              </div>
+              <Switch
+                id="show_guest_list_public"
+                checked={formData.show_guest_list_public}
+                onCheckedChange={(checked) => setFormData({ ...formData, show_guest_list_public: checked })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="show_rsvp_status_public">Exibir Status de Confirmação Publicamente</Label>
+                <p className="text-sm text-muted-foreground">
+                  Mostra estatísticas de confirmação (porcentagem e progresso) na página pública
+                </p>
+              </div>
+              <Switch
+                id="show_rsvp_status_public"
+                checked={formData.show_rsvp_status_public}
+                onCheckedChange={(checked) => setFormData({ ...formData, show_rsvp_status_public: checked })}
+              />
+            </div>
           </div>
 
           <Button type="submit" disabled={loading}>

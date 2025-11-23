@@ -296,12 +296,12 @@ const Index = () => {
                 Olá, {invitationData.guest_name}! 👋
               </CardTitle>
               <CardDescription className="text-center text-lg">
-                Você irá ao casamento?
+                Você vem ao nosso casamento?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="message">Mensagem para os noivos (opcional)</Label>
+                <Label htmlFor="message">Gostaria de deixar uma mensagem para os noivos? (opcional)</Label>
                 <Textarea
                   id="message"
                   value={formData.message}
