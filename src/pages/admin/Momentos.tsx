@@ -1,4 +1,4 @@
-import PhotosManager from "@/components/admin/PhotosManager";
+import WeddingPhotosManager from "@/components/admin/WeddingPhotosManager";
 
 const Momentos = () => {
   return (
@@ -9,7 +9,7 @@ const Momentos = () => {
           Gerencie as fotos exibidas na galeria do site
         </p>
       </div>
-      <PhotosManager />
+      <WeddingPhotosManager />
     </div>
   );
 };

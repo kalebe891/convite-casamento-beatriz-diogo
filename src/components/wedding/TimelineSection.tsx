@@ -6,6 +6,7 @@ interface TimelineEvent {
   id: string;
   time: string;
   activity: string;
+  observation: string | null;
   is_public: boolean;
   display_order: number;
 }
@@ -62,6 +63,9 @@ const TimelineSection = ({ weddingId }: TimelineSectionProps) => {
                 <h3 className="text-xl font-medium text-foreground">
                   {event.activity}
                 </h3>
+                {event.observation && (
+                  <p className="text-sm text-muted-foreground mt-2 italic">{event.observation}</p>
+                )}
               </div>
             </div>
           ))}
