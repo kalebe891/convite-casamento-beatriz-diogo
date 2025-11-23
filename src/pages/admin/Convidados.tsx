@@ -1,6 +1,4 @@
 import GuestsManager from "@/components/admin/GuestsManager";
-import RSVPList from "@/components/admin/RSVPList";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Convidados = () => {
   return (
@@ -8,24 +6,11 @@ const Convidados = () => {
       <div>
         <h1 className="text-3xl font-serif font-bold">Gerenciar Convidados</h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie convidados e acompanhe as confirmações de presença
+          Gerencie convidados e envie convites
         </p>
       </div>
 
-      <Tabs defaultValue="guests" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="guests">Convidados</TabsTrigger>
-          <TabsTrigger value="rsvps">Confirmações</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="guests">
-          <GuestsManager />
-        </TabsContent>
-
-        <TabsContent value="rsvps">
-          <RSVPList />
-        </TabsContent>
-      </Tabs>
+      <GuestsManager />
     </div>
   );
 };
