@@ -13,8 +13,6 @@ const WeddingSettingsForm = () => {
   const [loading, setLoading] = useState(false);
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    show_guest_list_public: false,
-    show_rsvp_status_public: false,
     venue_map_url: "",
     couple_message: "",
   });
@@ -32,8 +30,6 @@ const WeddingSettingsForm = () => {
     if (data) {
       setWeddingId(data.id);
       setFormData({
-        show_guest_list_public: data.show_guest_list_public || false,
-        show_rsvp_status_public: data.show_rsvp_status_public || false,
         venue_map_url: data.venue_map_url || "",
         couple_message: data.couple_message || "",
       });
@@ -77,39 +73,6 @@ const WeddingSettingsForm = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Exibir lista de convidados publicamente</Label>
-                <p className="text-sm text-muted-foreground">
-                  Permite que visitantes vejam quem foi convidado
-                </p>
-              </div>
-              <Switch
-                checked={formData.show_guest_list_public}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, show_guest_list_public: checked })
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Exibir status de confirmação publicamente</Label>
-                <p className="text-sm text-muted-foreground">
-                  Mostra quem confirmou presença (requer lista pública ativa)
-                </p>
-              </div>
-              <Switch
-                checked={formData.show_rsvp_status_public}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, show_rsvp_status_public: checked })
-                }
-                disabled={!formData.show_guest_list_public}
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
             <Label htmlFor="venue_map_url">URL do Mapa (Google Maps Embed)</Label>
             <Input

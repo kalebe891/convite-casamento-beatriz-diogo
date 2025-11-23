@@ -17,7 +17,6 @@ import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
 const rsvpResponseSchema = z.object({
-  dietary_restrictions: z.string().trim().max(500).optional().or(z.literal("")),
   message: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 
@@ -48,7 +47,6 @@ const Index = () => {
   const [invitationError, setInvitationError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    dietary_restrictions: "",
     message: "",
   });
 
@@ -121,9 +119,8 @@ const Index = () => {
         setInvitationData(data);
 
         // Pre-fill form with existing data if available
-        if (data.dietary_restrictions || data.message) {
+        if (data.message) {
           setFormData({
-            dietary_restrictions: data.dietary_restrictions || "",
             message: data.message || "",
           });
         }
@@ -156,7 +153,6 @@ const Index = () => {
           body: JSON.stringify({
             token: invitation_code,
             attending,
-            dietary_restrictions: validatedData.dietary_restrictions || undefined,
             message: validatedData.message || undefined,
           }),
         }
@@ -174,7 +170,6 @@ const Index = () => {
         ...invitationData,
         attending,
         responded_at: new Date().toISOString(),
-        dietary_restrictions: validatedData.dietary_restrictions || null,
         message: validatedData.message || null,
       });
 
@@ -273,20 +268,12 @@ const Index = () => {
                   }
                 </CardDescription>
               </CardHeader>
-              {(invitationData.dietary_restrictions || invitationData.message) && (
+              {invitationData.message && (
                 <CardContent className="space-y-4 border-t pt-6">
-                  {invitationData.dietary_restrictions && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Restrições alimentares:</p>
-                      <p className="text-foreground">{invitationData.dietary_restrictions}</p>
-                    </div>
-                  )}
-                  {invitationData.message && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Mensagem:</p>
-                      <p className="text-foreground">{invitationData.message}</p>
-                    </div>
-                  )}
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Mensagem:</p>
+                    <p className="text-foreground">{invitationData.message}</p>
+                  </div>
                 </CardContent>
               )}
             </Card>
@@ -313,21 +300,6 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="dietary">Restrições alimentares / Observações</Label>
-                <Textarea
-                  id="dietary"
-                  value={formData.dietary_restrictions}
-                  onChange={(e) => setFormData({ ...formData, dietary_restrictions: e.target.value })}
-                  placeholder="Ex: vegetariano, alergia a frutos do mar..."
-                  maxLength={500}
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.dietary_restrictions.length}/500 caracteres
-                </p>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="message">Mensagem para os noivos (opcional)</Label>
                 <Textarea

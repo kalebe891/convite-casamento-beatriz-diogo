@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { guestSchema } from "@/lib/validationSchemas";
 import { getSafeErrorMessage } from "@/lib/errorHandling";
+import GuestMessagesDialog from "./GuestMessagesDialog";
 
 interface Guest {
   id: string;
@@ -230,7 +231,9 @@ const GuestsManager = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Convidados</CardTitle>
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <div className="flex gap-2">
+              <GuestMessagesDialog />
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
                 <Button>Adicionar Convidado</Button>
               </DialogTrigger>
@@ -274,6 +277,7 @@ const GuestsManager = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
