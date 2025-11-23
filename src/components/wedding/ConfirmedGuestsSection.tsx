@@ -10,11 +10,29 @@ interface ConfirmedGuestsSectionProps {
 const ConfirmedGuestsSection = ({ weddingId }: ConfirmedGuestsSectionProps) => {
   const [confirmedGuests, setConfirmedGuests] = useState<any[]>([]);
   const [stats, setStats] = useState({ confirmed: 0, total: 0 });
+  const [settings, setSettings] = useState({
+    show_guest_list_public: false,
+    show_rsvp_status_public: false,
+  });
 
   useEffect(() => {
     if (!weddingId) return;
 
     const fetchConfirmedGuests = async () => {
+      // Buscar configurações de visibilidade
+      const { data: weddingData } = await supabase
+        .from("wedding_details")
+        .select("show_guest_list_public, show_rsvp_status_public")
+        .eq("id", weddingId)
+        .single();
+
+      if (weddingData) {
+        setSettings({
+          show_guest_list_public: weddingData.show_guest_list_public || false,
+          show_rsvp_status_public: weddingData.show_rsvp_status_public || false,
+        });
+      }
+
       // Buscar confirmações da tabela invitations
       const { data: invitationsData } = await supabase
         .from("invitations")
@@ -54,7 +72,8 @@ const ConfirmedGuestsSection = ({ weddingId }: ConfirmedGuestsSectionProps) => {
     fetchConfirmedGuests();
   }, [weddingId]);
 
-  if (stats.total === 0) return null;
+  // Não mostrar nada se não houver convidados ou se ambas as opções estiverem desabilitadas
+  if (stats.total === 0 || (!settings.show_guest_list_public && !settings.show_rsvp_status_public)) return null;
 
   return (
     <section className="py-20 bg-background">
@@ -63,31 +82,33 @@ const ConfirmedGuestsSection = ({ weddingId }: ConfirmedGuestsSectionProps) => {
           Confirmados
         </h2>
 
-        <div className="max-w-4xl mx-auto mb-12">
-          <Card className="shadow-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-center gap-3 text-2xl">
-                <Users className="w-6 h-6 text-primary" />
-                <span>
-                  {stats.confirmed} de {stats.total} convidados confirmaram presença
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full bg-muted rounded-full h-4">
-                <div
-                  className="bg-primary h-4 rounded-full transition-all duration-500"
-                  style={{ width: `${(stats.confirmed / stats.total) * 100}%` }}
-                />
-              </div>
-              <p className="text-center text-muted-foreground mt-2">
-                {Math.round((stats.confirmed / stats.total) * 100)}% confirmado
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {settings.show_rsvp_status_public && (
+          <div className="max-w-4xl mx-auto mb-12">
+            <Card className="shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-center gap-3 text-2xl">
+                  <Users className="w-6 h-6 text-primary" />
+                  <span>
+                    {stats.confirmed} de {stats.total} convidados confirmaram presença
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full bg-muted rounded-full h-4">
+                  <div
+                    className="bg-primary h-4 rounded-full transition-all duration-500"
+                    style={{ width: `${(stats.confirmed / stats.total) * 100}%` }}
+                  />
+                </div>
+                <p className="text-center text-muted-foreground mt-2">
+                  {Math.round((stats.confirmed / stats.total) * 100)}% confirmado
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {confirmedGuests.length > 0 && (
+        {settings.show_guest_list_public && confirmedGuests.length > 0 && (
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {confirmedGuests.map((guest, index) => (

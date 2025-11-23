@@ -103,6 +103,36 @@ const GuestsManager = () => {
   };
 
   const handleDeleteGuest = async (id: string) => {
+    // Get guest email first
+    const guest = guests.find(g => g.id === id);
+    if (!guest) {
+      toast.error("Convidado não encontrado");
+      return;
+    }
+
+    // Delete related rsvp_tokens
+    const { error: tokenError } = await supabase
+      .from("rsvp_tokens")
+      .delete()
+      .eq("guest_id", id);
+
+    if (tokenError) {
+      console.error("Error deleting tokens:", tokenError);
+    }
+
+    // Delete related invitations
+    if (guest.email) {
+      const { error: invitationError } = await supabase
+        .from("invitations")
+        .delete()
+        .eq("guest_email", guest.email);
+
+      if (invitationError) {
+        console.error("Error deleting invitation:", invitationError);
+      }
+    }
+
+    // Delete the guest
     const { error } = await supabase.from("guests").delete().eq("id", id);
 
     if (error) {
