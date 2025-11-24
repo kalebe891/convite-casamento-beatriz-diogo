@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil, X } from "lucide-react";
 import { timelineEventSchema } from "@/lib/validationSchemas";
 import { getSafeErrorMessage } from "@/lib/errorHandling";
 
@@ -15,6 +15,7 @@ const TimelineManager = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState({ time: "", activity: "", observation: "", is_public: true });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -37,7 +38,7 @@ const TimelineManager = () => {
     }
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!weddingId) return;
 
     // Validate input data
@@ -52,22 +53,60 @@ const TimelineManager = () => {
       return;
     }
 
-    const { error } = await supabase.from("timeline_events").insert({
-      wedding_id: weddingId,
-      time: validationResult.data.time.trim(),
-      activity: validationResult.data.activity.trim(),
-      observation: newEvent.observation.trim() || null,
-      is_public: newEvent.is_public,
-      display_order: events.length,
-    });
+    if (editingId) {
+      // Update existing event
+      const { error } = await supabase
+        .from("timeline_events")
+        .update({
+          time: validationResult.data.time.trim(),
+          activity: validationResult.data.activity.trim(),
+          observation: newEvent.observation.trim() || null,
+          is_public: newEvent.is_public,
+        })
+        .eq("id", editingId);
 
-    if (error) {
-      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Evento atualizado!" });
+        setNewEvent({ time: "", activity: "", observation: "", is_public: true });
+        setEditingId(null);
+        fetchData();
+      }
     } else {
-      toast({ title: "Sucesso", description: "Evento adicionado!" });
-      setNewEvent({ time: "", activity: "", observation: "", is_public: true });
-      fetchData();
+      // Insert new event
+      const { error } = await supabase.from("timeline_events").insert({
+        wedding_id: weddingId,
+        time: validationResult.data.time.trim(),
+        activity: validationResult.data.activity.trim(),
+        observation: newEvent.observation.trim() || null,
+        is_public: newEvent.is_public,
+        display_order: events.length,
+      });
+
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Evento adicionado!" });
+        setNewEvent({ time: "", activity: "", observation: "", is_public: true });
+        fetchData();
+      }
     }
+  };
+
+  const handleEdit = (event: any) => {
+    setEditingId(event.id);
+    setNewEvent({
+      time: event.time,
+      activity: event.activity,
+      observation: event.observation || "",
+      is_public: event.is_public,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewEvent({ time: "", activity: "", observation: "", is_public: true });
   };
 
   const handleDelete = async (id: string) => {
@@ -98,7 +137,7 @@ const TimelineManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Evento ao Cronograma</CardTitle>
+          <CardTitle>{editingId ? "Editar Evento" : "Adicionar Evento ao Cronograma"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -133,10 +172,27 @@ const TimelineManager = () => {
             />
             <Label>Exibir publicamente</Label>
           </div>
-          <Button onClick={handleAdd} disabled={!newEvent.time || !newEvent.activity}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={!newEvent.time || !newEvent.activity}>
+              {editingId ? (
+                <>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Atualizar
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button onClick={handleCancelEdit} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -163,6 +219,13 @@ const TimelineManager = () => {
                       checked={event.is_public}
                       onCheckedChange={() => handleTogglePublic(event.id, event.is_public)}
                     />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(event)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="icon"

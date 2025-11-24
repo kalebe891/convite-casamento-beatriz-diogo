@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil, X } from "lucide-react";
 import { playlistSongSchema } from "@/lib/validationSchemas";
 import { getSafeErrorMessage } from "@/lib/errorHandling";
 
@@ -15,6 +15,7 @@ const PlaylistManager = () => {
   const [songs, setSongs] = useState<any[]>([]);
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [newSong, setNewSong] = useState({ moment: "", song_name: "", artist: "", is_public: true });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -37,7 +38,7 @@ const PlaylistManager = () => {
     }
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!weddingId) return;
 
     // Validate input data
@@ -53,22 +54,60 @@ const PlaylistManager = () => {
       return;
     }
 
-    const { error } = await supabase.from("playlist_songs").insert({
-      wedding_id: weddingId,
-      moment: validationResult.data.moment.trim(),
-      song_name: validationResult.data.song_name.trim(),
-      artist: validationResult.data.artist?.trim() || null,
-      is_public: newSong.is_public,
-      display_order: songs.length,
-    });
+    if (editingId) {
+      // Update existing song
+      const { error } = await supabase
+        .from("playlist_songs")
+        .update({
+          moment: validationResult.data.moment.trim(),
+          song_name: validationResult.data.song_name.trim(),
+          artist: validationResult.data.artist?.trim() || null,
+          is_public: newSong.is_public,
+        })
+        .eq("id", editingId);
 
-    if (error) {
-      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Música atualizada!" });
+        setNewSong({ moment: "", song_name: "", artist: "", is_public: true });
+        setEditingId(null);
+        fetchData();
+      }
     } else {
-      toast({ title: "Sucesso", description: "Música adicionada!" });
-      setNewSong({ moment: "", song_name: "", artist: "", is_public: true });
-      fetchData();
+      // Insert new song
+      const { error } = await supabase.from("playlist_songs").insert({
+        wedding_id: weddingId,
+        moment: validationResult.data.moment.trim(),
+        song_name: validationResult.data.song_name.trim(),
+        artist: validationResult.data.artist?.trim() || null,
+        is_public: newSong.is_public,
+        display_order: songs.length,
+      });
+
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Música adicionada!" });
+        setNewSong({ moment: "", song_name: "", artist: "", is_public: true });
+        fetchData();
+      }
     }
+  };
+
+  const handleEdit = (song: any) => {
+    setEditingId(song.id);
+    setNewSong({
+      moment: song.moment,
+      song_name: song.song_name,
+      artist: song.artist || "",
+      is_public: song.is_public,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewSong({ moment: "", song_name: "", artist: "", is_public: true });
   };
 
   const handleDelete = async (id: string) => {
@@ -99,7 +138,7 @@ const PlaylistManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Música à Playlist</CardTitle>
+          <CardTitle>{editingId ? "Editar Música" : "Adicionar Música à Playlist"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -133,10 +172,27 @@ const PlaylistManager = () => {
             />
             <Label>Exibir publicamente</Label>
           </div>
-          <Button onClick={handleAdd} disabled={!newSong.moment || !newSong.song_name}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={!newSong.moment || !newSong.song_name}>
+              {editingId ? (
+                <>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Atualizar
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button onClick={handleCancelEdit} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -163,6 +219,13 @@ const PlaylistManager = () => {
                       checked={song.is_public}
                       onCheckedChange={() => handleTogglePublic(song.id, song.is_public)}
                     />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(song)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="icon"

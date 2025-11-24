@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil, X } from "lucide-react";
 import { buffetItemSchema } from "@/lib/validationSchemas";
 import { getSafeErrorMessage } from "@/lib/errorHandling";
 
@@ -15,6 +15,7 @@ const BuffetManager = () => {
   const [items, setItems] = useState<any[]>([]);
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [newItem, setNewItem] = useState({ item_name: "", category: "", is_public: true });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -37,7 +38,7 @@ const BuffetManager = () => {
     }
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!weddingId) return;
 
     // Validate input data
@@ -52,21 +53,57 @@ const BuffetManager = () => {
       return;
     }
 
-    const { error } = await supabase.from("buffet_items").insert({
-      wedding_id: weddingId,
-      item_name: validationResult.data.item_name.trim(),
-      category: validationResult.data.category?.trim() || null,
-      is_public: newItem.is_public,
-      display_order: items.length,
-    });
+    if (editingId) {
+      // Update existing item
+      const { error } = await supabase
+        .from("buffet_items")
+        .update({
+          item_name: validationResult.data.item_name.trim(),
+          category: validationResult.data.category?.trim() || null,
+          is_public: newItem.is_public,
+        })
+        .eq("id", editingId);
 
-    if (error) {
-      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Item atualizado!" });
+        setNewItem({ item_name: "", category: "", is_public: true });
+        setEditingId(null);
+        fetchData();
+      }
     } else {
-      toast({ title: "Sucesso", description: "Item adicionado!" });
-      setNewItem({ item_name: "", category: "", is_public: true });
-      fetchData();
+      // Insert new item
+      const { error } = await supabase.from("buffet_items").insert({
+        wedding_id: weddingId,
+        item_name: validationResult.data.item_name.trim(),
+        category: validationResult.data.category?.trim() || null,
+        is_public: newItem.is_public,
+        display_order: items.length,
+      });
+
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Item adicionado!" });
+        setNewItem({ item_name: "", category: "", is_public: true });
+        fetchData();
+      }
     }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingId(item.id);
+    setNewItem({
+      item_name: item.item_name,
+      category: item.category || "",
+      is_public: item.is_public,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewItem({ item_name: "", category: "", is_public: true });
   };
 
   const handleDelete = async (id: string) => {
@@ -97,7 +134,7 @@ const BuffetManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Item ao Buffet</CardTitle>
+          <CardTitle>{editingId ? "Editar Item" : "Adicionar Item ao Buffet"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -123,10 +160,27 @@ const BuffetManager = () => {
             />
             <Label>Exibir publicamente</Label>
           </div>
-          <Button onClick={handleAdd} disabled={!newItem.item_name}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={!newItem.item_name}>
+              {editingId ? (
+                <>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Atualizar
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button onClick={handleCancelEdit} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -152,6 +206,13 @@ const BuffetManager = () => {
                       checked={item.is_public}
                       onCheckedChange={() => handleTogglePublic(item.id, item.is_public)}
                     />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(item)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="icon"

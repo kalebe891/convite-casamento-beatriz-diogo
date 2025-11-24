@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Pencil, X } from "lucide-react";
 import { getSafeErrorMessage } from "@/lib/errorHandling";
 
 const GiftManager = () => {
@@ -19,6 +19,7 @@ const GiftManager = () => {
     link: "",
     is_public: true 
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -41,28 +42,66 @@ const GiftManager = () => {
     }
   };
 
-  const handleAdd = async () => {
+  const handleSave = async () => {
     if (!weddingId || !newItem.gift_name.trim()) {
       toast({ title: "Erro", description: "Nome do presente é obrigatório", variant: "destructive" });
       return;
     }
 
-    const { error } = await supabase.from("gift_items").insert({
-      wedding_id: weddingId,
-      gift_name: newItem.gift_name.trim(),
-      description: newItem.description.trim() || null,
-      link: newItem.link.trim() || null,
-      is_public: newItem.is_public,
-      display_order: items.length,
-    });
+    if (editingId) {
+      // Update existing gift
+      const { error } = await supabase
+        .from("gift_items")
+        .update({
+          gift_name: newItem.gift_name.trim(),
+          description: newItem.description.trim() || null,
+          link: newItem.link.trim() || null,
+          is_public: newItem.is_public,
+        })
+        .eq("id", editingId);
 
-    if (error) {
-      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Presente atualizado!" });
+        setNewItem({ gift_name: "", description: "", link: "", is_public: true });
+        setEditingId(null);
+        fetchData();
+      }
     } else {
-      toast({ title: "Sucesso", description: "Presente adicionado!" });
-      setNewItem({ gift_name: "", description: "", link: "", is_public: true });
-      fetchData();
+      // Insert new gift
+      const { error } = await supabase.from("gift_items").insert({
+        wedding_id: weddingId,
+        gift_name: newItem.gift_name.trim(),
+        description: newItem.description.trim() || null,
+        link: newItem.link.trim() || null,
+        is_public: newItem.is_public,
+        display_order: items.length,
+      });
+
+      if (error) {
+        toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: "Presente adicionado!" });
+        setNewItem({ gift_name: "", description: "", link: "", is_public: true });
+        fetchData();
+      }
     }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingId(item.id);
+    setNewItem({
+      gift_name: item.gift_name,
+      description: item.description || "",
+      link: item.link || "",
+      is_public: item.is_public,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setNewItem({ gift_name: "", description: "", link: "", is_public: true });
   };
 
   const handleDelete = async (id: string) => {
@@ -93,7 +132,7 @@ const GiftManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Adicionar Presente</CardTitle>
+          <CardTitle>{editingId ? "Editar Presente" : "Adicionar Presente"}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -127,10 +166,27 @@ const GiftManager = () => {
             />
             <Label>Exibir publicamente</Label>
           </div>
-          <Button onClick={handleAdd} disabled={!newItem.gift_name}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={!newItem.gift_name}>
+              {editingId ? (
+                <>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Atualizar
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar
+                </>
+              )}
+            </Button>
+            {editingId && (
+              <Button onClick={handleCancelEdit} variant="outline">
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -166,6 +222,13 @@ const GiftManager = () => {
                       checked={item.is_public}
                       onCheckedChange={() => handleTogglePublic(item.id, item.is_public)}
                     />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleEdit(item)}
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="icon"
