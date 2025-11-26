@@ -22,12 +22,13 @@ const Invitation = () => {
   const [weddingDetails, setWeddingDetails] = useState<any>(null);
   const [events, setEvents] = useState([]);
   const [gifts, setGifts] = useState<any[]>([]);
+  const [selectedGiftId, setSelectedGiftId] = useState<string>("");
+  const [giftSelecting, setGiftSelecting] = useState(false);
   const [formData, setFormData] = useState({
     attending: "",
     plusOne: false,
     dietaryRestrictions: "",
     message: "",
-    selectedGiftId: "",
   });
 
   useEffect(() => {
@@ -88,8 +89,18 @@ const Invitation = () => {
             plusOne: invitationData.plus_one || false,
             dietaryRestrictions: invitationData.dietary_restrictions || "",
             message: invitationData.message || "",
-            selectedGiftId: "",
           });
+        }
+
+        // Verificar se já selecionou um presente
+        const { data: selectedGift } = await supabase
+          .from("gift_items")
+          .select("id")
+          .eq("selected_by_invitation_id", invitationData.id)
+          .maybeSingle();
+
+        if (selectedGift) {
+          setSelectedGiftId(selectedGift.id);
         }
       } catch (error: any) {
         toast({
@@ -104,6 +115,66 @@ const Invitation = () => {
 
     fetchInvitation();
   }, [code, toast]);
+
+  const handleGiftSelect = async (giftId: string) => {
+    if (!invitation) return;
+    
+    setGiftSelecting(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/select-gift`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            invitation_id: invitation.id,
+            gift_id: giftId || null,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Erro ao selecionar presente');
+      }
+
+      setSelectedGiftId(giftId);
+      
+      if (data.cleared) {
+        toast({
+          title: "Presente desmarcado",
+          description: "Você pode escolher outro presente.",
+        });
+      } else {
+        toast({
+          title: "🎁 Presente reservado!",
+          description: `${data.gift_name} foi reservado por você.`,
+        });
+      }
+
+      // Atualizar lista de presentes
+      const { data: giftsData } = await supabase
+        .from("gift_items")
+        .select("*")
+        .eq("wedding_id", invitation.wedding_id)
+        .is("selected_by_invitation_id", null)
+        .order("display_order");
+
+      setGifts(giftsData || []);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível selecionar o presente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGiftSelecting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +196,6 @@ const Invitation = () => {
             plus_one: formData.plusOne,
             dietary_restrictions: formData.dietaryRestrictions,
             message: formData.message,
-            selected_gift_id: formData.selectedGiftId || null,
           }),
         }
       );
@@ -251,34 +321,35 @@ const Invitation = () => {
                   </>
                 )}
 
-                {gifts.length > 0 && (
-                  <div className={`space-y-3 p-4 border rounded-lg bg-background transition-opacity ${
-                    formData.attending !== "yes" ? "opacity-60" : ""
-                  }`}>
+                {(gifts.length > 0 || selectedGiftId) && (
+                  <div className="space-y-3 p-4 border rounded-lg bg-background">
                     <Label className="text-base">
                       Gostaria de presentear os noivos? (opcional)
                     </Label>
-                    {formData.attending !== "yes" && (
-                      <p className="text-sm text-muted-foreground">
-                        Confirme sua presença para selecionar um presente
-                      </p>
+                    <p className="text-sm text-muted-foreground">
+                      Você pode selecionar um presente agora e confirmar sua presença depois
+                    </p>
+                    {selectedGiftId && (
+                      <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
+                        <p className="text-sm font-medium text-primary">
+                          🎁 Presente reservado por você!
+                        </p>
+                      </div>
                     )}
                     <RadioGroup
-                      value={formData.selectedGiftId}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, selectedGiftId: value })
-                      }
-                      disabled={formData.attending !== "yes"}
+                      value={selectedGiftId}
+                      onValueChange={handleGiftSelect}
+                      disabled={giftSelecting}
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="" id="no-gift" disabled={formData.attending !== "yes"} />
+                        <RadioGroupItem value="" id="no-gift" disabled={giftSelecting} />
                         <Label htmlFor="no-gift" className="font-normal cursor-pointer">
-                          Não selecionar presente
+                          {selectedGiftId ? "Desmarcar presente" : "Não selecionar presente"}
                         </Label>
                       </div>
                       {gifts.map((gift) => (
                         <div key={gift.id} className="flex items-start space-x-2">
-                          <RadioGroupItem value={gift.id} id={`gift-${gift.id}`} disabled={formData.attending !== "yes"} />
+                          <RadioGroupItem value={gift.id} id={`gift-${gift.id}`} disabled={giftSelecting} />
                           <Label
                             htmlFor={`gift-${gift.id}`}
                             className="font-normal cursor-pointer flex-1"
@@ -295,6 +366,11 @@ const Invitation = () => {
                         </div>
                       ))}
                     </RadioGroup>
+                    {giftSelecting && (
+                      <p className="text-sm text-muted-foreground">
+                        Processando seleção...
+                      </p>
+                    )}
                   </div>
                 )}
 
