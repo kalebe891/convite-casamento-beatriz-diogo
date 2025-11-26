@@ -31,12 +31,12 @@ const Invitation = () => {
     message: "",
   });
 
-  const fetchGiftItems = async (weddingId: string) => {
+  const fetchGiftItems = async (weddingId: string, invitationId: string) => {
     const { data: giftsData } = await supabase
       .from("gift_items")
       .select("*")
       .eq("wedding_id", weddingId)
-      .is("selected_by_invitation_id", null)
+      .or(`selected_by_invitation_id.is.null,selected_by_invitation_id.eq.${invitationId}`)
       .order("display_order");
     
     setGifts(giftsData || []);
@@ -84,7 +84,7 @@ const Invitation = () => {
           setEvents(eventsData || []);
 
           // Buscar presentes disponíveis
-          await fetchGiftItems(invitationData.wedding_id);
+          await fetchGiftItems(invitationData.wedding_id, invitationData.id);
         }
 
         if (invitationData.attending !== null) {
@@ -161,7 +161,7 @@ const Invitation = () => {
     }
 
     // Atualizar lista de presentes
-    await fetchGiftItems(invitation.wedding_id);
+    await fetchGiftItems(invitation.wedding_id, invitation.id);
     } catch (error: any) {
       toast({
         title: "Erro",
