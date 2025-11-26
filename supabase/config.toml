@@ -9,6 +9,9 @@ verify_jwt = false
 [functions.rsvp-respond]
 verify_jwt = false
 
+[functions.select-gift]
+verify_jwt = false
+
 [functions.invite-admin]
 verify_jwt = true
 
