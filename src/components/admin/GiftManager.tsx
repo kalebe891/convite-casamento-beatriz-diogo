@@ -141,14 +141,33 @@ const GiftManager = () => {
   };
 
   const handleTogglePublic = async (id: string, currentValue: boolean) => {
-    const { error } = await supabase
+    const newValue = !currentValue;
+    console.log(`[GiftManager] Toggling gift ${id} from ${currentValue} to ${newValue}`);
+    
+    const { data, error } = await supabase
       .from("gift_items")
-      .update({ is_public: !currentValue })
-      .eq("id", id);
+      .update({ is_public: newValue })
+      .eq("id", id)
+      .select();
 
     if (error) {
+      console.error('[GiftManager] Error toggling public:', error);
       toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
     } else {
+      console.log('[GiftManager] Toggle successful:', data);
+      toast({ 
+        title: "Atualizado", 
+        description: `Presente ${newValue ? 'visível' : 'oculto'} para o público`,
+      });
+      
+      await logAdminAction({
+        action: "update",
+        tableName: "gift_items",
+        recordId: id,
+        oldData: { is_public: currentValue },
+        newData: { is_public: newValue },
+      });
+      
       fetchData();
     }
   };
