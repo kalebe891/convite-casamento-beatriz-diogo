@@ -76,7 +76,6 @@ const Invitation = () => {
             .from("gift_items")
             .select("*")
             .eq("wedding_id", invitationData.wedding_id)
-            .eq("is_public", true)
             .is("selected_by_invitation_id", null)
             .order("display_order");
 
