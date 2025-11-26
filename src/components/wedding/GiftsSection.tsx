@@ -34,7 +34,6 @@ const GiftsSection = ({ weddingId }: GiftsSectionProps) => {
           invitation:invitations(guest_name)
         `)
         .eq("wedding_id", weddingId)
-        .eq("is_public", true)
         .order("display_order");
 
       if (error) {
