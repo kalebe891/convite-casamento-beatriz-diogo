@@ -369,6 +369,9 @@ const Index = () => {
       </header>
 
       <main className="pt-20">
+        <div style={{textAlign:"center", backgroundColor:"#ff0000", color:"#fff", padding:"10px", fontSize:"18px", fontWeight:"bold"}}>
+          🔧 TESTE VISUAL DE BUILD (component REAL do convite - Index.tsx)
+        </div>
         <HeroSection weddingDetails={weddingDetails} />
         <StorySection weddingDetails={weddingDetails} />
         {renderRSVPSection()}
