@@ -42,6 +42,8 @@ const Invitation = () => {
   const [formData, setFormData] = useState({
     message: "",
   });
+  const [gifts, setGifts] = useState([]);
+  const [debugInfo, setDebugInfo] = useState<{ weddingId: string | null, invitationId: string | null, giftsCount: number, giftsData: any[] } | null>(null);
 
   // Fetch wedding data
   useEffect(() => {
@@ -66,6 +68,31 @@ const Invitation = () => {
 
     fetchWeddingData();
   }, []);
+
+  // Fetch gifts data
+  useEffect(() => {
+    const fetchGiftItems = async () => {
+      if (!weddingDetails?.id || !invitationData?.id) return;
+
+      const { data: giftsData } = await supabase
+        .from("gift_items")
+        .select("*")
+        .eq("wedding_id", weddingDetails.id)
+        .order("display_order");
+
+      setGifts(giftsData || []);
+      
+      // Set debug info
+      setDebugInfo({
+        weddingId: weddingDetails.id,
+        invitationId: invitationData.id,
+        giftsCount: giftsData?.length || 0,
+        giftsData: giftsData || []
+      });
+    };
+
+    fetchGiftItems();
+  }, [weddingDetails, invitationData]);
 
   // Fetch invitation data
   useEffect(() => {
@@ -316,10 +343,6 @@ const Invitation = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div style={{textAlign:"center", backgroundColor:"#00ff00", color:"#000", padding:"10px", fontSize:"18px", fontWeight:"bold"}}>
-        🔧 TESTE VISUAL DE BUILD (Invitation.tsx NOVO)
-      </div>
-      
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-serif font-bold text-primary">
@@ -333,6 +356,29 @@ const Invitation = () => {
         <HeroSection weddingDetails={weddingDetails} />
         {renderRSVPSection()}
         <EventsSection events={events} />
+        
+        {/* DEBUG BLOCK - VISIBLE */}
+        {debugInfo && (
+          <section className="py-8 bg-yellow-100 dark:bg-yellow-900">
+            <div className="container mx-auto px-4">
+              <div className="max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+                <h2 className="text-2xl font-bold mb-4 text-black dark:text-white">🔍 DEBUG PRESENTES</h2>
+                <div className="space-y-2 text-sm font-mono text-black dark:text-white">
+                  <p><strong>wedding_id:</strong> {debugInfo.weddingId}</p>
+                  <p><strong>invitation_id:</strong> {debugInfo.invitationId}</p>
+                  <p><strong>Total presentes recebidos:</strong> {debugInfo.giftsCount}</p>
+                  <div className="mt-4">
+                    <strong>JSON:</strong>
+                    <pre className="mt-2 p-4 bg-gray-100 dark:bg-gray-900 rounded overflow-auto max-h-96 text-xs">
+                      {JSON.stringify(debugInfo.giftsData, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+        
         <GiftsSection weddingId={weddingDetails?.id || null} />
       </main>
 
