@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, MessageSquare, Trash2, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { Mail, MessageSquare, Trash2, Copy, ExternalLink, RefreshCw, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { guestSchema } from "@/lib/validationSchemas";
@@ -26,11 +26,18 @@ interface Guest {
 const GuestsManager = () => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [whatsAppMessage, setWhatsAppMessage] = useState("");
   const [whatsAppLink, setWhatsAppLink] = useState("");
   const [newGuest, setNewGuest] = useState({
+    name: "",
+    phone: "",
+    email: "",
+  });
+  const [editGuest, setEditGuest] = useState({
+    id: "",
     name: "",
     phone: "",
     email: "",
@@ -98,6 +105,92 @@ const GuestsManager = () => {
       toast.success("Convidado adicionado com sucesso!");
       setNewGuest({ name: "", phone: "", email: "" });
       setIsAddOpen(false);
+      fetchGuests();
+    }
+  };
+
+  const handleOpenEditDialog = (guest: Guest) => {
+    setEditGuest({
+      id: guest.id,
+      name: guest.name,
+      phone: guest.phone || "",
+      email: guest.email || "",
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleUpdateGuest = async () => {
+    // Validate input data
+    const validationResult = guestSchema.safeParse({
+      name: editGuest.name,
+      phone: editGuest.phone,
+      email: editGuest.email,
+    });
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast.error(firstError.message);
+      return;
+    }
+
+    // Check for duplicate phone (excluding current guest)
+    const phoneToCheck = validationResult.data.phone?.trim();
+    if (phoneToCheck) {
+      const { data: existingGuests, error: checkError } = await supabase
+        .from("guests")
+        .select("id, phone")
+        .eq("phone", phoneToCheck)
+        .neq("id", editGuest.id);
+
+      if (checkError) {
+        console.error("Error checking phone:", checkError);
+        toast.error("Erro ao verificar telefone");
+        return;
+      }
+
+      if (existingGuests && existingGuests.length > 0) {
+        toast.error("Já existe outro convidado com este telefone");
+        return;
+      }
+    }
+
+    // Get old data for logging
+    const oldGuest = guests.find(g => g.id === editGuest.id);
+
+    const { error } = await supabase
+      .from("guests")
+      .update({
+        name: validationResult.data.name.trim(),
+        phone: validationResult.data.phone?.trim() || null,
+        email: validationResult.data.email?.trim() || null,
+      })
+      .eq("id", editGuest.id);
+
+    if (error) {
+      console.error("Error updating guest:", error);
+      toast.error(getSafeErrorMessage(error));
+    } else {
+      // Log the update
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        await supabase.from("admin_logs").insert({
+          user_id: userData.user.id,
+          user_email: userData.user.email || null,
+          action: "update",
+          table_name: "guests",
+          record_id: editGuest.id,
+          old_data: oldGuest as any,
+          new_data: {
+            name: validationResult.data.name.trim(),
+            phone: validationResult.data.phone?.trim() || null,
+            email: validationResult.data.email?.trim() || null,
+          } as any,
+        });
+      }
+
+      toast.success("Convidado atualizado com sucesso!");
+      setEditGuest({ id: "", name: "", phone: "", email: "" });
+      setIsEditOpen(false);
       fetchGuests();
     }
   };
@@ -448,6 +541,14 @@ const GuestsManager = () => {
                   <TableCell>{getStatusBadge(guest.status)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenEditDialog(guest)}
+                        title="Editar convidado"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       {guest.email && (
                         <Button
                           variant="outline"
@@ -491,6 +592,65 @@ const GuestsManager = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Convidado</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="edit-name">Nome *</Label>
+              <Input
+                id="edit-name"
+                value={editGuest.name}
+                onChange={(e) => setEditGuest({ ...editGuest, name: e.target.value })}
+                placeholder="Nome completo"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-phone">Telefone *</Label>
+              <Input
+                id="edit-phone"
+                value={editGuest.phone}
+                onChange={(e) => {
+                  // Format phone as user types: (xx) xxxxx-xxxx
+                  let value = e.target.value.replace(/\D/g, "");
+                  if (value.length > 11) value = value.slice(0, 11);
+                  
+                  let formatted = "";
+                  if (value.length > 0) {
+                    formatted = `(${value.slice(0, 2)}`;
+                    if (value.length > 2) {
+                      formatted += `) ${value.slice(2, 7)}`;
+                      if (value.length > 7) {
+                        formatted += `-${value.slice(7, 11)}`;
+                      }
+                    }
+                  }
+                  setEditGuest({ ...editGuest, phone: formatted });
+                }}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editGuest.email}
+                onChange={(e) => setEditGuest({ ...editGuest, email: e.target.value })}
+                placeholder="email@exemplo.com"
+              />
+            </div>
+            <Button onClick={handleUpdateGuest} className="w-full">
+              Salvar Alterações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isWhatsAppOpen} onOpenChange={setIsWhatsAppOpen}>
         <DialogContent className="max-w-2xl">
