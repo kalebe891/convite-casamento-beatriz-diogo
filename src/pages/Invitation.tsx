@@ -15,6 +15,8 @@ import EventsSection from "@/components/wedding/EventsSection";
 
 const Invitation = () => {
   const { code } = useParams();
+  console.warn("💡 useParams says:", useParams());
+  console.warn("📌 code param is:", code);
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
