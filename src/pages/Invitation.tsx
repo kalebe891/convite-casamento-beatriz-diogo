@@ -40,6 +40,7 @@ const Invitation = () => {
       .order("display_order");
     
     setGifts(giftsData || []);
+    console.log("GIFTS LOADED:", giftsData);
   };
 
   useEffect(() => {
