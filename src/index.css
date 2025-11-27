@@ -115,3 +115,16 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide Lovable badge */
+#lovable-badge {
+  display: none !important;
+}
+
+/* Fix button text wrapping on very small screens */
+@media (max-width: 372px) {
+  .confirm-button {
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+}

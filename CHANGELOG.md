@@ -5,6 +5,24 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/),
 e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR/).
 
+## [1.0.0] - 2025-11-27
+
+### Adicionado
+- Funcionalidade de edição de convidados no painel administrativo
+- Validação de telefone único ao editar convidados
+- Sistema completo de gerenciamento de presentes com seleção via RSVP
+- Drawer responsivo para lista de presentes na página de convite
+
+### Modificado
+- Interface de usuário otimizada para dispositivos móveis
+- Posicionamento do drawer de presentes ajustado (10% da borda direita em desktop)
+- Badge do Lovable ocultado na interface pública
+- Botões de confirmação RSVP com melhor responsividade em telas pequenas
+
+### Corrigido
+- Quebra de texto em botões de confirmação em dispositivos muito pequenos (< 372px)
+- Layout do drawer de presentes em diferentes tamanhos de tela
+
 ## [0.9.0] - 2025-11-26
 
 ### Adicionado
