@@ -381,7 +381,15 @@ export type Database = {
           token?: string
           usado?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pending_users_papel_fkey"
+            columns: ["papel"]
+            isOneToOne: false
+            referencedRelation: "role_profiles"
+            referencedColumns: ["role_key"]
+          },
+        ]
       }
       photos: {
         Row: {
