@@ -230,9 +230,14 @@ const Invitation = () => {
       toast({
         title: attending ? "Presença confirmada!" : "Resposta registrada",
         description: attending 
-          ? "Obrigado por confirmar! Mal podemos esperar para celebrar com você!"
-          : "Sentiremos sua falta 💔",
+          ? "Obrigado por confirmar! Você será redirecionado em instantes..."
+          : "Sentiremos sua falta 💔 Você será redirecionado em instantes...",
       });
+
+      // Redirecionar após 5 segundos
+      setTimeout(() => {
+        window.location.href = "https://convite-casamento-beatriz-diogo.lovable.app/";
+      }, 5000);
     } catch (error) {
       console.error('[Invitation] Erro ao responder RSVP:', error);
       if (error instanceof z.ZodError) {
@@ -375,8 +380,8 @@ const Invitation = () => {
                 </CardTitle>
                 <CardDescription className="text-center text-lg">
                   {invitationData.attending 
-                    ? "Sua presença está confirmada! Mal podemos esperar para celebrar com você!"
-                    : "Obrigado por nos informar. Esperamos vê-lo em outra ocasião! 💔"
+                    ? "Sua presença está confirmada! Mal podemos esperar para celebrar com você! Você será redirecionado em instantes..."
+                    : "Obrigado por nos informar. Esperamos vê-lo em outra ocasião! 💔 Você será redirecionado em instantes..."
                   }
                 </CardDescription>
               </CardHeader>
