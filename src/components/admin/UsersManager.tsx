@@ -6,17 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Copy, Mail, MessageCircle, Settings } from "lucide-react";
+import { Loader2, Copy, Mail, MessageCircle } from "lucide-react";
 import UsersList from "./UsersList";
 import PendingInvitesList from "./PendingInvitesList";
-import RoleProfilesDialog from "./RoleProfilesDialog";
 
-interface RoleProfile {
-  role_key: string;
-  role_label: string;
+interface UsersManagerProps {
+  roleProfiles: Array<{ role_key: string; role_label: string }>;
+  onRoleProfilesChange: () => void;
 }
 
-const UsersManager = () => {
+const UsersManager = ({ roleProfiles, onRoleProfilesChange }: UsersManagerProps) => {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [nome, setNome] = useState("");
@@ -24,27 +23,6 @@ const UsersManager = () => {
   const [loading, setLoading] = useState(false);
   const [magicLink, setMagicLink] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
-  const [roleProfiles, setRoleProfiles] = useState<RoleProfile[]>([]);
-  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
-
-  useEffect(() => {
-    fetchRoleProfiles();
-  }, []);
-
-  const fetchRoleProfiles = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("role_profiles")
-        .select("role_key, role_label")
-        .order("is_system", { ascending: false })
-        .order("role_label");
-
-      if (error) throw error;
-      setRoleProfiles(data || []);
-    } catch (error: any) {
-      console.error("Error fetching role profiles:", error);
-    }
-  };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,19 +141,7 @@ const UsersManager = () => {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="role">Papel no Sistema</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setRoleDialogOpen(true)}
-                  disabled={loading}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Gerenciar Papéis
-                </Button>
-              </div>
+              <Label htmlFor="role">Papel no Sistema</Label>
               <Select value={role} onValueChange={setRole} disabled={loading}>
                 <SelectTrigger id="role">
                   <SelectValue placeholder="Selecione um papel" />
@@ -283,12 +249,10 @@ const UsersManager = () => {
 
       <PendingInvitesList refreshTrigger={refreshKey} />
       
-      <UsersList refreshKey={refreshKey} />
-
-      <RoleProfilesDialog
-        open={roleDialogOpen}
-        onOpenChange={setRoleDialogOpen}
-        onRoleChange={fetchRoleProfiles}
+      <UsersList 
+        refreshKey={refreshKey}
+        roleProfiles={roleProfiles}
+        onRoleProfilesChange={onRoleProfilesChange}
       />
     </div>
   );

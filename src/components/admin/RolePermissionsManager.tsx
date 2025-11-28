@@ -100,14 +100,19 @@ const RolePermissionsManager = ({ roleKey, roleLabel }: RolePermissionsManagerPr
 
       const { error } = await supabase
         .from("admin_permissions")
-        .upsert({
-          role_key: roleKey,
-          menu_key: menuKey,
-          can_view: updatedPermission.can_view,
-          can_add: updatedPermission.can_add,
-          can_edit: updatedPermission.can_edit,
-          can_delete: updatedPermission.can_delete,
-        });
+        .upsert(
+          {
+            role_key: roleKey,
+            menu_key: menuKey,
+            can_view: updatedPermission.can_view,
+            can_add: updatedPermission.can_add,
+            can_edit: updatedPermission.can_edit,
+            can_delete: updatedPermission.can_delete,
+          },
+          {
+            onConflict: "role_key,menu_key"
+          }
+        );
 
       if (error) throw error;
 

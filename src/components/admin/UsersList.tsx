@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Shield, UserCog, Users as UsersIcon, Trash2, Search, RefreshCw } from "lucide-react";
+import { Shield, UserCog, Users as UsersIcon, Trash2, Search, RefreshCw, Settings } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import RoleProfilesDialog from "./RoleProfilesDialog";
 
 interface UserProfile {
   id: string;
@@ -63,9 +64,11 @@ const roleColors = {
 
 interface UsersListProps {
   refreshKey?: number;
+  roleProfiles: Array<{ role_key: string; role_label: string }>;
+  onRoleProfilesChange: () => void;
 }
 
-const UsersList = ({ refreshKey }: UsersListProps) => {
+const UsersList = ({ refreshKey, roleProfiles, onRoleProfilesChange }: UsersListProps) => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +76,7 @@ const UsersList = ({ refreshKey }: UsersListProps) => {
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -277,8 +281,20 @@ const UsersList = ({ refreshKey }: UsersListProps) => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Usuários</CardTitle>
-          <CardDescription>Gerencie os usuários e suas permissões</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Lista de Usuários</CardTitle>
+              <CardDescription>Gerencie os usuários e suas permissões</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRoleDialogOpen(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Gerenciar Papéis
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -441,6 +457,12 @@ const UsersList = ({ refreshKey }: UsersListProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <RoleProfilesDialog
+        open={roleDialogOpen}
+        onOpenChange={setRoleDialogOpen}
+        onRoleChange={onRoleProfilesChange}
+      />
     </>
   );
 };
