@@ -1,24 +1,20 @@
 import { useState } from "react";
-import couplePhoto from "@/assets/couple-photo.jpg";
-import heroImage from "@/assets/hero-wedding.jpg";
 
 interface GallerySectionProps {
-  photos: any[];
+  photos: any[] | null;
 }
 
 const GallerySection = ({ photos }: GallerySectionProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const defaultPhotos = [
-    { photo_url: couplePhoto, caption: "Golden hour" },
-    { photo_url: heroImage, caption: "Beautiful florals" },
-    { photo_url: couplePhoto, caption: "Love and laughter" },
-    { photo_url: heroImage, caption: "Perfect day" },
-  ];
+  // Não renderizar até ter dados do Supabase
+  if (!photos || photos.length === 0) {
+    return null;
+  }
 
-  const displayPhotos = photos.length > 0 
-    ? photos.map(p => ({ photo_url: p.photo_url, caption: p.caption }))
-    : defaultPhotos;
+  const displayPhotos = photos
+    .filter(p => !p.is_main && !p.is_secondary)
+    .map(p => ({ photo_url: p.photo_url, caption: p.caption }));
 
   return (
     <section className="py-20 bg-gradient-elegant">

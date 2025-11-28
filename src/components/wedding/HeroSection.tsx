@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import heroImage from "@/assets/hero-wedding.jpg";
 import { Heart } from "lucide-react";
 
 interface HeroSectionProps {
@@ -32,7 +31,12 @@ const HeroSection = ({ weddingDetails }: HeroSectionProps) => {
     fetchMainPhoto();
   }, [weddingDetails?.id]);
 
-  const backgroundImage = mainPhoto || heroImage;
+  // Não renderizar até ter dados do Supabase
+  if (!weddingDetails || !mainPhoto) {
+    return null;
+  }
+
+  const backgroundImage = mainPhoto;
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
@@ -57,18 +61,16 @@ const HeroSection = ({ weddingDetails }: HeroSectionProps) => {
         <Heart className="w-16 h-16 mx-auto mb-6 text-primary animate-scale-in" />
         
         <h1 className="text-6xl md:text-8xl font-serif font-bold mb-4 text-foreground">
-          {weddingDetails?.bride_name || "Beatriz"} & {weddingDetails?.groom_name || "Diogo"}
+          {weddingDetails.bride_name} & {weddingDetails.groom_name}
         </h1>
         
         <div className="h-px w-32 mx-auto bg-primary my-6"></div>
         
         <p className="text-2xl md:text-3xl text-muted-foreground mb-8">
-          {weddingDetails?.wedding_date 
-            ? format(new Date(weddingDetails.wedding_date + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-            : "18 de Abril de 2026"}
+          {format(new Date(weddingDetails.wedding_date + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
         </p>
         
-        {weddingDetails?.venue_name && (
+        {weddingDetails.venue_name && (
           <p className="text-xl text-muted-foreground">
             {weddingDetails.venue_name}
           </p>
