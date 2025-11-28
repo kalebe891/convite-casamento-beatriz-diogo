@@ -24,6 +24,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
     // Verify the requesting user is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -32,15 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Create client with anon key to validate user token
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: {
-        headers: { Authorization: authHeader }
-      }
-    });
-    
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
       console.error('[invite-admin] User authentication failed:', userError);
@@ -48,9 +42,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`[invite-admin] User authenticated: ${user.email}`);
-
-    // Create service client for admin operations
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check if user has admin role
     const { data: hasAdminRole, error: roleCheckError } = await supabase
