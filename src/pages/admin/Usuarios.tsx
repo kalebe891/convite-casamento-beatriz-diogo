@@ -1,6 +1,29 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import UsersManager from "@/components/admin/UsersManager";
 
 const Usuarios = () => {
+  const [roleProfiles, setRoleProfiles] = useState<Array<{ role_key: string; role_label: string }>>([]);
+
+  useEffect(() => {
+    fetchRoleProfiles();
+  }, []);
+
+  const fetchRoleProfiles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("role_profiles")
+        .select("role_key, role_label")
+        .order("is_system", { ascending: false })
+        .order("role_label");
+
+      if (error) throw error;
+      setRoleProfiles(data || []);
+    } catch (error: any) {
+      console.error("Error fetching role profiles:", error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -10,7 +33,10 @@ const Usuarios = () => {
         </p>
       </div>
       
-      <UsersManager />
+      <UsersManager 
+        roleProfiles={roleProfiles}
+        onRoleProfilesChange={fetchRoleProfiles}
+      />
     </div>
   );
 };
