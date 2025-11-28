@@ -19,8 +19,8 @@ const Index = () => {
 
   const [session, setSession] = useState(null);
   const [weddingDetails, setWeddingDetails] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [photos, setPhotos] = useState([]);
+  const [events, setEvents] = useState(null);
+  const [photos, setPhotos] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -56,8 +56,8 @@ const Index = () => {
           .eq("wedding_id", weddingData.id)
           .order("display_order");
 
-        setEvents(eventsData || []);
-        setPhotos(photosData || []);
+        setEvents(eventsData || null);
+        setPhotos(photosData || null);
       }
     };
 

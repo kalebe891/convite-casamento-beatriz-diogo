@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import couplePhoto from "@/assets/couple-photo.jpg";
 
 interface StorySectionProps {
   weddingDetails: any;
@@ -8,10 +7,14 @@ interface StorySectionProps {
 
 const StorySection = ({ weddingDetails }: StorySectionProps) => {
   const [secondaryPhoto, setSecondaryPhoto] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSecondaryPhoto = async () => {
-      if (!weddingDetails?.id) return;
+      if (!weddingDetails?.id) {
+        setIsLoading(false);
+        return;
+      }
 
       const { data } = await supabase
         .from("photos")
@@ -23,6 +26,8 @@ const StorySection = ({ weddingDetails }: StorySectionProps) => {
       if (data) {
         setSecondaryPhoto(data.photo_url);
       }
+      
+      setIsLoading(false);
     };
 
     fetchSecondaryPhoto();
@@ -48,7 +53,10 @@ const StorySection = ({ weddingDetails }: StorySectionProps) => {
     };
   }, [weddingDetails?.id]);
 
-  const displayPhoto = secondaryPhoto || couplePhoto;
+  // Não renderizar até ter dados do Supabase
+  if (!weddingDetails || isLoading || !secondaryPhoto) {
+    return null;
+  }
 
   return (
     <section className="py-20 bg-gradient-elegant">
@@ -60,8 +68,8 @@ const StorySection = ({ weddingDetails }: StorySectionProps) => {
         <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
           <div className="animate-fade-in">
             <img
-              src={displayPhoto}
-              alt="Couple"
+              src={secondaryPhoto}
+              alt="Casal"
               className="rounded-lg shadow-elegant w-full h-auto object-cover"
             />
           </div>
