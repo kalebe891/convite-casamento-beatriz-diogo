@@ -24,26 +24,45 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    
     // Verify the requesting user is an admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      console.error('[invite-admin] No authorization header provided');
       throw new Error("No authorization header");
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    // Create client with anon key to validate user token
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: {
+        headers: { Authorization: authHeader }
+      }
+    });
+    
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
     if (userError || !user) {
+      console.error('[invite-admin] User authentication failed:', userError);
       throw new Error("Unauthorized");
     }
 
+    console.log(`[invite-admin] User authenticated: ${user.email}`);
+
+    // Create service client for admin operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Check if user has admin role
-    const { data: hasAdminRole } = await supabase
+    const { data: hasAdminRole, error: roleCheckError } = await supabase
       .rpc('has_role', { _user_id: user.id, _role: 'admin' });
     
+    if (roleCheckError) {
+      console.error('[invite-admin] Error checking admin role:', roleCheckError);
+      throw new Error("Error verifying permissions");
+    }
+    
     if (!hasAdminRole) {
+      console.error(`[invite-admin] User ${user.email} is not an admin`);
       throw new Error("User is not an admin");
     }
 
@@ -63,14 +82,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate role exists in role_profiles
     console.log(`[invite-admin] Validating role '${role}' exists in role_profiles`);
-    const { data: roleExists, error: roleError } = await supabase
+    const { data: roleExists, error: roleValidationError } = await supabase
       .from('role_profiles')
       .select('role_key')
       .eq('role_key', role)
       .single();
     
-    if (roleError || !roleExists) {
-      console.error(`[invite-admin] Invalid role '${role}':`, roleError);
+    if (roleValidationError || !roleExists) {
+      console.error(`[invite-admin] Invalid role '${role}':`, roleValidationError);
       throw new Error(`Papel inválido: ${role}. O papel não existe no sistema.`);
     }
     
