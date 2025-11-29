@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock } from "lucide-react";
+import { SkeletonText } from "@/components/ui/skeleton-text";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
 
 interface TimelineEvent {
   id: string;
@@ -16,7 +18,7 @@ interface TimelineSectionProps {
 }
 
 const TimelineSection = ({ weddingId }: TimelineSectionProps) => {
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [events, setEvents] = useState<TimelineEvent[] | null>(null);
 
   useEffect(() => {
     if (!weddingId) return;
@@ -34,6 +36,24 @@ const TimelineSection = ({ weddingId }: TimelineSectionProps) => {
 
     fetchEvents();
   }, [weddingId]);
+
+  // Show skeleton while loading
+  if (events === null) {
+    return (
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <SkeletonText variant="heading" className="mx-auto max-w-md" />
+          </div>
+          <div className="max-w-3xl mx-auto space-y-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <SkeletonCard key={i} lines={1} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (events.length === 0) return null;
 

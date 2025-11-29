@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Music } from "lucide-react";
+import { SkeletonText } from "@/components/ui/skeleton-text";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PlaylistSong {
   id: string;
@@ -17,10 +20,13 @@ interface PlaylistSectionProps {
 }
 
 const PlaylistSection = ({ weddingId }: PlaylistSectionProps) => {
-  const [songs, setSongs] = useState<PlaylistSong[]>([]);
+  const [songs, setSongs] = useState<PlaylistSong[] | null>(null);
 
   useEffect(() => {
-    if (!weddingId) return;
+    if (!weddingId) {
+      setSongs([]);
+      return;
+    }
 
     const fetchPlaylistSongs = async () => {
       const { data } = await supabase
@@ -35,6 +41,26 @@ const PlaylistSection = ({ weddingId }: PlaylistSectionProps) => {
 
     fetchPlaylistSongs();
   }, [weddingId]);
+
+  // Show skeleton while loading
+  if (songs === null) {
+    return (
+      <section className="py-16 px-4 bg-muted/50">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center mb-12">
+            <Skeleton className="w-12 h-12 mx-auto mb-4 rounded" />
+            <SkeletonText variant="heading" className="mx-auto max-w-md mb-2" />
+            <SkeletonText variant="body" className="mx-auto max-w-xs" />
+          </div>
+          <div className="space-y-6">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <SkeletonCard key={i} lines={4} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (!weddingId || songs.length === 0) return null;
 

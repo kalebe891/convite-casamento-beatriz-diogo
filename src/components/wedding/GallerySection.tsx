@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { SkeletonGallery } from "@/components/ui/skeleton-gallery";
+import { SkeletonText } from "@/components/ui/skeleton-text";
 
 interface GallerySectionProps {
   photos: any[] | null;
@@ -7,9 +9,20 @@ interface GallerySectionProps {
 const GallerySection = ({ photos }: GallerySectionProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Não renderiza nada enquanto os dados não estiverem carregados
+  // Show skeleton while loading
   if (!photos) {
-    return null;
+    return (
+      <section className="py-20 bg-gradient-elegant">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <SkeletonText variant="heading" className="mx-auto max-w-md" />
+          </div>
+          <div className="max-w-6xl mx-auto">
+            <SkeletonGallery columns={4} items={8} />
+          </div>
+        </div>
+      </section>
+    );
   }
 
   if (photos.length === 0) {

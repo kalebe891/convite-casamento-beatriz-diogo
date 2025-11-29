@@ -8,6 +8,10 @@ import { Heart, MapPin, Calendar, Clock } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonText } from "@/components/ui/skeleton-text";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { SkeletonImage } from "@/components/ui/skeleton-image";
 
 const Convite = () => {
   const { id } = useParams();
@@ -90,8 +94,41 @@ const Convite = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Carregando...</p>
+      <div className="min-h-screen bg-background">
+        <div className="fixed top-4 right-4 z-50">
+          <ThemeToggle />
+        </div>
+
+        {/* Hero Skeleton */}
+        <section className="relative h-screen flex items-center justify-center bg-gradient-to-b from-primary/10 to-background">
+          <div className="text-center space-y-6 px-4 max-w-4xl mx-auto">
+            <Skeleton className="w-16 h-16 mx-auto rounded-full" />
+            <SkeletonText variant="heading" className="mx-auto" />
+            <SkeletonText variant="title" className="mx-auto max-w-md" />
+            <SkeletonText variant="body" lines={2} className="mx-auto max-w-2xl" />
+            <Skeleton className="h-12 w-64 mx-auto rounded-lg mt-8" />
+          </div>
+        </section>
+
+        {/* Photos Skeleton */}
+        <section className="py-20 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="text-center mb-12">
+              <SkeletonText variant="heading" className="mx-auto max-w-md" />
+            </div>
+            <SkeletonImage className="w-full max-w-4xl mx-auto h-[600px]" />
+          </div>
+        </section>
+
+        {/* Location Skeleton */}
+        <section className="py-20 px-4 bg-muted/30">
+          <div className="container mx-auto max-w-4xl">
+            <div className="text-center mb-12">
+              <SkeletonText variant="heading" className="mx-auto max-w-md" />
+            </div>
+            <SkeletonCard lines={3} />
+          </div>
+        </section>
       </div>
     );
   }
