@@ -21,6 +21,7 @@ const Index = () => {
   const [weddingDetails, setWeddingDetails] = useState(null);
   const [events, setEvents] = useState(null);
   const [photos, setPhotos] = useState(null);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,28 +37,32 @@ const Index = () => {
 
   useEffect(() => {
     const fetchWeddingData = async () => {
-      const { data: weddingData } = await supabase
-        .from("wedding_details")
-        .select("*")
-        .single();
-
-      if (weddingData) {
-        setWeddingDetails(weddingData);
-
-        const { data: eventsData } = await supabase
-          .from("events")
+      try {
+        const { data: weddingData } = await supabase
+          .from("wedding_details")
           .select("*")
-          .eq("wedding_id", weddingData.id)
-          .order("event_date");
+          .single();
 
-        const { data: photosData } = await supabase
-          .from("photos")
-          .select("*")
-          .eq("wedding_id", weddingData.id)
-          .order("display_order");
+        if (weddingData) {
+          setWeddingDetails(weddingData);
 
-        setEvents(eventsData || null);
-        setPhotos(photosData || null);
+          const { data: eventsData } = await supabase
+            .from("events")
+            .select("*")
+            .eq("wedding_id", weddingData.id)
+            .order("event_date");
+
+          const { data: photosData } = await supabase
+            .from("photos")
+            .select("*")
+            .eq("wedding_id", weddingData.id)
+            .order("display_order");
+
+          setEvents(eventsData || null);
+          setPhotos(photosData || null);
+        }
+      } finally {
+        setLoadingData(false);
       }
     };
 

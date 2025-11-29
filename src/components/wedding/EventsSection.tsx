@@ -2,6 +2,8 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar, MapPin, Clock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { SkeletonText } from "@/components/ui/skeleton-text";
 
 interface EventsSectionProps {
   events: any[] | null;
@@ -15,9 +17,22 @@ const parseEventDate = (dateString: string) => {
 };
 
 const EventsSection = ({ events }: EventsSectionProps) => {
-  // Não renderiza nada enquanto os dados não estiverem carregados
+  // Show skeleton while loading
   if (!events) {
-    return null;
+    return (
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <SkeletonText variant="heading" className="mx-auto max-w-md" />
+          </div>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <SkeletonCard key={i} lines={3} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   if (events.length === 0) {

@@ -2,21 +2,28 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SkeletonText } from "@/components/ui/skeleton-text";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ConfirmedGuestsSectionProps {
   weddingId: string | null;
 }
 
 const ConfirmedGuestsSection = ({ weddingId }: ConfirmedGuestsSectionProps) => {
-  const [confirmedGuests, setConfirmedGuests] = useState<any[]>([]);
+  const [confirmedGuests, setConfirmedGuests] = useState<any[] | null>(null);
   const [stats, setStats] = useState({ confirmed: 0, total: 0 });
   const [settings, setSettings] = useState({
     show_guest_list_public: false,
     show_rsvp_status_public: false,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!weddingId) return;
+    if (!weddingId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchConfirmedGuests = async () => {
       // Buscar configurações de visibilidade
@@ -57,10 +64,34 @@ const ConfirmedGuestsSection = ({ weddingId }: ConfirmedGuestsSectionProps) => {
         confirmed: confirmedGuestsData?.length || 0,
         total: allGuestsData?.length || 0,
       });
+      setLoading(false);
     };
 
     fetchConfirmedGuests();
   }, [weddingId]);
+
+  // Show skeleton while loading
+  if (loading) {
+    return (
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <SkeletonText variant="heading" className="mx-auto max-w-md" />
+          </div>
+          <div className="max-w-4xl mx-auto mb-12">
+            <SkeletonCard lines={2} />
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-lg" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   // Não mostrar nada se não houver convidados ou se ambas as opções estiverem desabilitadas
   if (stats.total === 0 || (!settings.show_guest_list_public && !settings.show_rsvp_status_public)) return null;

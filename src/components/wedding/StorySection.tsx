@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonImage } from "@/components/ui/skeleton-image";
+import { SkeletonText } from "@/components/ui/skeleton-text";
 
 interface StorySectionProps {
   weddingDetails: any;
@@ -47,7 +49,7 @@ const StorySection = ({ weddingDetails }: StorySectionProps) => {
     };
   }, [weddingDetails?.id]);
 
-  if (!weddingDetails || !secondaryPhoto) {
+  if (!weddingDetails) {
     return null;
   }
 
@@ -59,13 +61,19 @@ const StorySection = ({ weddingDetails }: StorySectionProps) => {
         </h2>
         
         <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-          <div className="animate-fade-in">
-            <img
-              src={secondaryPhoto}
-              alt="Casal"
-              className="rounded-lg shadow-elegant w-full h-auto object-cover"
-            />
-          </div>
+          {!secondaryPhoto ? (
+            <div className="animate-fade-in">
+              <SkeletonImage className="w-full h-[500px]" />
+            </div>
+          ) : (
+            <div className="animate-fade-in">
+              <img
+                src={secondaryPhoto}
+                alt="Casal"
+                className="rounded-lg shadow-elegant w-full h-auto object-cover"
+              />
+            </div>
+          )}
           
           <div className="space-y-6 animate-fade-in-up">
             <p className="text-lg text-muted-foreground leading-relaxed">

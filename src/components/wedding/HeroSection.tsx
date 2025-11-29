@@ -3,6 +3,8 @@ import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Heart } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SkeletonText } from "@/components/ui/skeleton-text";
 
 interface HeroSectionProps {
   weddingDetails: any;
@@ -31,8 +33,40 @@ const HeroSection = ({ weddingDetails }: HeroSectionProps) => {
     fetchMainPhoto();
   }, [weddingDetails?.id]);
 
-  if (!weddingDetails || !mainPhoto) {
-    return null;
+  if (!weddingDetails) {
+    return (
+      <section className="relative h-screen flex items-center justify-center overflow-hidden bg-muted/30">
+        <div className="relative z-10 text-center px-4 space-y-6 max-w-4xl mx-auto">
+          <Skeleton className="w-16 h-16 mx-auto rounded-full" />
+          <SkeletonText variant="heading" className="mx-auto" />
+          <Skeleton className="h-px w-32 mx-auto" />
+          <SkeletonText variant="title" className="mx-auto" />
+          <SkeletonText variant="body" className="mx-auto" />
+        </div>
+      </section>
+    );
+  }
+
+  if (!mainPhoto) {
+    return (
+      <section className="relative h-screen flex items-center justify-center overflow-hidden bg-muted/30">
+        <div className="relative z-10 text-center px-4 animate-fade-in-up">
+          <Heart className="w-16 h-16 mx-auto mb-6 text-primary animate-scale-in" />
+          <h1 className="text-6xl md:text-8xl font-serif font-bold mb-4 text-foreground">
+            {weddingDetails.bride_name} & {weddingDetails.groom_name}
+          </h1>
+          <div className="h-px w-32 mx-auto bg-primary my-6"></div>
+          <p className="text-2xl md:text-3xl text-muted-foreground mb-8">
+            {format(new Date(weddingDetails.wedding_date + 'T00:00:00'), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          </p>
+          {weddingDetails.venue_name && (
+            <p className="text-xl text-muted-foreground">
+              {weddingDetails.venue_name}
+            </p>
+          )}
+        </div>
+      </section>
+    );
   }
 
   const backgroundImage = mainPhoto;
