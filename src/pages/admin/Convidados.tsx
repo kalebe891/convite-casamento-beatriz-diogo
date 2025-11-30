@@ -1,6 +1,17 @@
 import GuestsManager from "@/components/admin/GuestsManager";
+import { usePagePermissions } from "@/hooks/usePagePermissions";
 
 const Convidados = () => {
+  const permissions = usePagePermissions("convidados");
+
+  if (permissions.loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -10,7 +21,7 @@ const Convidados = () => {
         </p>
       </div>
 
-      <GuestsManager />
+      <GuestsManager permissions={permissions} />
     </div>
   );
 };

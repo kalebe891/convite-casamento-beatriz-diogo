@@ -752,6 +752,10 @@ export type Database = {
     }
     Functions: {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      has_table_permission: {
+        Args: { _menu_key: string; _permission_type: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "couple" | "planner" | "cerimonial"
