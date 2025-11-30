@@ -23,7 +23,17 @@ interface Guest {
   created_at: string;
 }
 
-const GuestsManager = () => {
+interface GuestsManagerProps {
+  permissions: {
+    canView: boolean;
+    canAdd: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+    canPublish: boolean;
+  };
+}
+
+const GuestsManager = ({ permissions }: GuestsManagerProps) => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -82,6 +92,11 @@ const GuestsManager = () => {
   }, []);
 
   const handleAddGuest = async () => {
+    if (!permissions.canAdd) {
+      toast.error("Você não possui permissão para adicionar convidados");
+      return;
+    }
+
     // Validate input data
     const validationResult = guestSchema.safeParse(newGuest);
     
@@ -120,6 +135,11 @@ const GuestsManager = () => {
   };
 
   const handleUpdateGuest = async () => {
+    if (!permissions.canEdit) {
+      toast.error("Você não possui permissão para editar convidados");
+      return;
+    }
+
     // Validate input data
     const validationResult = guestSchema.safeParse({
       name: editGuest.name,
@@ -196,6 +216,11 @@ const GuestsManager = () => {
   };
 
   const handleDeleteGuest = async (id: string) => {
+    if (!permissions.canDelete) {
+      toast.error("Você não possui permissão para excluir convidados");
+      return;
+    }
+
     // Get guest email first
     const guest = guests.find(g => g.id === id);
     if (!guest) {
@@ -353,6 +378,11 @@ const GuestsManager = () => {
   };
 
   const handleRegenerateToken = async (guest: Guest) => {
+    if (!permissions.canAdd) {
+      toast.error("Você não possui permissão para regenerar convites");
+      return;
+    }
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-rsvp-token", {
         body: { guest_id: guest.id },
@@ -459,7 +489,7 @@ const GuestsManager = () => {
               <GuestMessagesDialog />
               <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
-                <Button>Adicionar Convidado</Button>
+                <Button disabled={!permissions.canAdd}>Adicionar Convidado</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
@@ -512,7 +542,7 @@ const GuestsManager = () => {
                       placeholder="email@exemplo.com"
                     />
                   </div>
-                  <Button onClick={handleAddGuest} className="w-full">
+                  <Button onClick={handleAddGuest} className="w-full" disabled={!permissions.canAdd}>
                     Adicionar
                   </Button>
                 </div>
@@ -546,6 +576,7 @@ const GuestsManager = () => {
                         size="sm"
                         onClick={() => handleOpenEditDialog(guest)}
                         title="Editar convidado"
+                        disabled={!permissions.canEdit}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -555,6 +586,7 @@ const GuestsManager = () => {
                           size="sm"
                           onClick={() => handleSendEmail(guest)}
                           title="Enviar e-mail"
+                          disabled={!permissions.canAdd}
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
@@ -564,6 +596,7 @@ const GuestsManager = () => {
                         size="sm"
                         onClick={() => handleGenerateWhatsAppLink(guest)}
                         title="Gerar link para WhatsApp"
+                        disabled={!permissions.canAdd}
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
@@ -573,6 +606,7 @@ const GuestsManager = () => {
                         onClick={() => handleRegenerateToken(guest)}
                         className="text-primary hover:text-primary"
                         title="Gerar novo token para alterar status"
+                        disabled={!permissions.canAdd}
                       >
                         <RefreshCw className="h-4 w-4" />
                       </Button>
@@ -581,6 +615,7 @@ const GuestsManager = () => {
                         size="sm"
                         onClick={() => handleDeleteGuest(guest.id)}
                         title="Excluir convidado"
+                        disabled={!permissions.canDelete}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -645,7 +680,7 @@ const GuestsManager = () => {
                 placeholder="email@exemplo.com"
               />
             </div>
-            <Button onClick={handleUpdateGuest} className="w-full">
+            <Button onClick={handleUpdateGuest} className="w-full" disabled={!permissions.canEdit}>
               Salvar Alterações
             </Button>
           </div>
