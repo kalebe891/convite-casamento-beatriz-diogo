@@ -51,7 +51,7 @@ const BuffetManager = ({ permissions }: BuffetManagerProps) => {
     }
   };
 
-  const handleToggleBuffetSection = async (checked: boolean) => {
+  const handleToggleBuffetSection = async (newValue: boolean) => {
     if (!permissions.canPublish) {
       toast({
         title: "Sem permissão",
@@ -63,27 +63,27 @@ const BuffetManager = ({ permissions }: BuffetManagerProps) => {
 
     if (!weddingId) return;
 
-    try {
-      const { error } = await supabase
-        .from("wedding_details")
-        .update({ show_buffet_section: checked })
-        .eq("id", weddingId);
+    const { error } = await supabase
+      .from("wedding_details")
+      .update({ show_buffet_section: newValue })
+      .eq("id", weddingId);
 
-      if (error) throw error;
+    if (error) {
+      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+    } else {
+      toast({
+        title: "Atualizado",
+        description: `Seção de buffet ${newValue ? 'exibida' : 'oculta'} na página pública`,
+      });
 
-      setShowBuffetSection(checked);
-      toast({
-        title: "Configuração atualizada!",
-        description: checked
-          ? "Seção buffet agora está visível na página pública"
-          : "Seção buffet foi ocultada da página pública",
+      await logAdminAction({
+        action: "update",
+        tableName: "wedding_details",
+        recordId: weddingId,
+        newData: { show_buffet_section: newValue },
       });
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+
+      setShowBuffetSection(newValue);
     }
   };
 

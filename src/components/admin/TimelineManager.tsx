@@ -51,7 +51,7 @@ const TimelineManager = ({ permissions }: TimelineManagerProps) => {
     }
   };
 
-  const handleToggleTimelineSection = async (checked: boolean) => {
+  const handleToggleTimelineSection = async (newValue: boolean) => {
     if (!permissions.canPublish) {
       toast({
         title: "Sem permissão",
@@ -63,27 +63,27 @@ const TimelineManager = ({ permissions }: TimelineManagerProps) => {
 
     if (!weddingId) return;
 
-    try {
-      const { error } = await supabase
-        .from("wedding_details")
-        .update({ show_timeline_section: checked })
-        .eq("id", weddingId);
+    const { error } = await supabase
+      .from("wedding_details")
+      .update({ show_timeline_section: newValue })
+      .eq("id", weddingId);
 
-      if (error) throw error;
+    if (error) {
+      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+    } else {
+      toast({
+        title: "Atualizado",
+        description: `Seção de cronograma ${newValue ? 'exibida' : 'oculta'} na página pública`,
+      });
 
-      setShowTimelineSection(checked);
-      toast({
-        title: "Configuração atualizada!",
-        description: checked
-          ? "Seção cronograma agora está visível na página pública"
-          : "Seção cronograma foi ocultada da página pública",
+      await logAdminAction({
+        action: "update",
+        tableName: "wedding_details",
+        recordId: weddingId,
+        newData: { show_timeline_section: newValue },
       });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: getSafeErrorMessage(error),
-        variant: "destructive",
-      });
+
+      setShowTimelineSection(newValue);
     }
   };
 
