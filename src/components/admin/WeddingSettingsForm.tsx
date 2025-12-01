@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,8 +21,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
   const [loading, setLoading] = useState(false);
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    venue_map_url: "",
-    couple_message: "",
     show_guest_list_public: false,
     show_rsvp_status_public: false,
   });
@@ -42,8 +38,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
     if (data) {
       setWeddingId(data.id);
       setFormData({
-        venue_map_url: data.venue_map_url || "",
-        couple_message: data.couple_message || "",
         show_guest_list_public: data.show_guest_list_public || false,
         show_rsvp_status_public: data.show_rsvp_status_public || false,
       });
@@ -87,34 +81,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="venue_map_url">URL do Mapa (Google Maps Embed)</Label>
-            <Input
-              id="venue_map_url"
-              placeholder="https://www.google.com/maps/embed?pb=..."
-              value={formData.venue_map_url}
-              onChange={(e) => setFormData({ ...formData, venue_map_url: e.target.value })}
-              disabled={!permissions.canEdit}
-              readOnly={!permissions.canEdit}
-            />
-            <p className="text-sm text-muted-foreground">
-              Cole o link de incorporação do Google Maps
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="couple_message">Mensagem do Casal</Label>
-            <Textarea
-              id="couple_message"
-              placeholder="Escreva uma mensagem especial para seus convidados..."
-              value={formData.couple_message}
-              onChange={(e) => setFormData({ ...formData, couple_message: e.target.value })}
-              rows={4}
-              disabled={!permissions.canEdit}
-              readOnly={!permissions.canEdit}
-            />
-          </div>
-
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
