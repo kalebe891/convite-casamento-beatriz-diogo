@@ -41,7 +41,6 @@ const GuestsManager = ({ permissions }: GuestsManagerProps) => {
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [whatsAppMessage, setWhatsAppMessage] = useState("");
   const [whatsAppLink, setWhatsAppLink] = useState("");
-  const [coupleMessage, setCoupleMessage] = useState("");
   const [newGuest, setNewGuest] = useState({
     name: "",
     phone: "",
@@ -68,20 +67,8 @@ const GuestsManager = ({ permissions }: GuestsManagerProps) => {
     }
   };
 
-  const fetchCoupleMessage = async () => {
-    const { data } = await supabase
-      .from("wedding_details")
-      .select("couple_message")
-      .single();
-    
-    if (data?.couple_message) {
-      setCoupleMessage(data.couple_message);
-    }
-  };
-
   useEffect(() => {
     fetchGuests();
-    fetchCoupleMessage();
 
     // Subscribe to realtime changes
     const channel = supabase
@@ -363,8 +350,7 @@ const GuestsManager = ({ permissions }: GuestsManagerProps) => {
       if (error) throw error;
 
       const link = data.link;
-      const coupleNote = coupleMessage ? `\n\n${coupleMessage}` : "";
-      const message = `Olá, ${guest.name}! 🎉\n\nEstamos te convidando para o nosso casamento!\nAcesse o link abaixo e confirme sua presença:\n\n${link}${coupleNote}`;
+      const message = `Olá, ${guest.name}! 🎉\n\nEstamos te convidando para o nosso casamento!\nAcesse o link abaixo e confirme sua presença:\n\n${link}`;
 
       setWhatsAppMessage(message);
       setWhatsAppLink(link);
@@ -426,8 +412,7 @@ const GuestsManager = ({ permissions }: GuestsManagerProps) => {
         }
       }
 
-      const coupleNote = coupleMessage ? `\n\n${coupleMessage}` : "";
-      const message = `Olá, ${guest.name}! 🎉\n\nSe desejar alterar sua confirmação de presença para o nosso casamento, acesse o link abaixo:\n\n${link}${giftInfo}${coupleNote}\n\nO link é válido por 30 dias.`;
+      const message = `Olá, ${guest.name}! 🎉\n\nSe desejar alterar sua confirmação de presença para o nosso casamento, acesse o link abaixo:\n\n${link}${giftInfo}\n\nO link é válido por 30 dias.`;
 
       setWhatsAppMessage(message);
       setWhatsAppLink(link);

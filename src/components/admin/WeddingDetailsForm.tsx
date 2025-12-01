@@ -171,19 +171,16 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="coupleMessage">Mensagem do Casal</Label>
+            <Label htmlFor="coupleMessage">Destaque</Label>
             <Textarea
               id="coupleMessage"
               value={formData.coupleMessage}
               onChange={(e) => setFormData({ ...formData, coupleMessage: e.target.value })}
-              rows={3}
-              placeholder="Ex: Estamos muito felizes em compartilhar este momento com você!"
+              rows={2}
+              placeholder="Ex: Duas almas, um coração"
               disabled={!permissions.canEdit}
               readOnly={!permissions.canEdit}
             />
-            <p className="text-xs text-muted-foreground">
-              Esta mensagem será incluída nos convites enviados por WhatsApp e E-mail, após o link do convite.
-            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading || !permissions.canEdit}>

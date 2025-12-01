@@ -69,14 +69,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Get wedding details
     const { data: weddingData } = await supabase
       .from("wedding_details")
-      .select("id, couple_message")
+      .select("id")
       .single();
 
     if (!weddingData) {
       throw new Error("Detalhes do casamento não encontrados");
     }
-
-    const coupleMessage = weddingData.couple_message || "";
 
     // Check if invitation already exists for this guest
     let invitation;
@@ -117,10 +115,6 @@ const handler = async (req: Request): Promise<Response> => {
     const invitationLink = `${origin}/convite/${invitation.unique_code}`;
 
     // Send email
-    const coupleMessageHtml = coupleMessage 
-      ? `<p style="font-size: 16px; color: #666; text-align: center; font-style: italic; margin-top: 20px;">${coupleMessage}</p>` 
-      : "";
-    
     const emailResponse = await resend.emails.send({
       from: "Convite de Casamento <onboarding@resend.dev>",
       to: [guest.email],
@@ -144,7 +138,6 @@ const handler = async (req: Request): Promise<Response> => {
             Ou copie e cole este link no seu navegador:<br>
             <span style="color: #666;">${invitationLink}</span>
           </p>
-          ${coupleMessageHtml}
         </div>
       `,
     });
