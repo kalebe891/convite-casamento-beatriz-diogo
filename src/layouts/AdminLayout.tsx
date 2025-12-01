@@ -65,7 +65,7 @@ const AdminLayout = () => {
       <div className="h-screen flex w-full bg-gradient-elegant overflow-hidden">
         <AppSidebar />
         
-        <div className="flex-1 flex flex-col h-full">
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
           <header className="h-16 border-b border-primary/20 bg-gradient-to-r from-card/95 via-secondary/30 to-card/95 shadow-md flex items-center justify-between px-6 shrink-0">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
@@ -96,7 +96,7 @@ const AdminLayout = () => {
             </div>
           </header>
 
-          <main className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 p-6 overflow-y-auto min-h-0">
             <div className="max-w-7xl mx-auto">
               <Outlet />
             </div>

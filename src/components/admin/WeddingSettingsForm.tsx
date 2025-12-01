@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -24,7 +23,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     venue_map_url: "",
-    couple_message: "",
     show_guest_list_public: false,
     show_rsvp_status_public: false,
   });
@@ -43,7 +41,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
       setWeddingId(data.id);
       setFormData({
         venue_map_url: data.venue_map_url || "",
-        couple_message: data.couple_message || "",
         show_guest_list_public: data.show_guest_list_public || false,
         show_rsvp_status_public: data.show_rsvp_status_public || false,
       });
@@ -100,19 +97,6 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
             <p className="text-sm text-muted-foreground">
               Cole o link de incorporação do Google Maps
             </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="couple_message">Mensagem do Casal</Label>
-            <Textarea
-              id="couple_message"
-              placeholder="Escreva uma mensagem especial para seus convidados..."
-              value={formData.couple_message}
-              onChange={(e) => setFormData({ ...formData, couple_message: e.target.value })}
-              rows={4}
-              disabled={!permissions.canEdit}
-              readOnly={!permissions.canEdit}
-            />
           </div>
 
           <div className="space-y-4">
