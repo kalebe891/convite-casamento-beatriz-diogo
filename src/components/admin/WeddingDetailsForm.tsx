@@ -28,6 +28,7 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
     venueName: "Espaço Verde Eventos",
     story: "",
     coupleMessage: "",
+    invitationMessage: "",
   });
 
   useEffect(() => {
@@ -46,6 +47,7 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
           venueName: data.venue_name || "",
           story: data.story || "",
           coupleMessage: data.couple_message || "",
+          invitationMessage: (data as any).invitation_message || "",
         });
       }
     };
@@ -65,6 +67,7 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
         venue_name: formData.venueName,
         story: formData.story,
         couple_message: formData.coupleMessage,
+        invitation_message: formData.invitationMessage,
       };
 
       if (weddingId) {
@@ -181,6 +184,22 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
               disabled={!permissions.canEdit}
               readOnly={!permissions.canEdit}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="invitationMessage">Mensagem do Casal (WhatsApp/Email)</Label>
+            <Textarea
+              id="invitationMessage"
+              value={formData.invitationMessage}
+              onChange={(e) => setFormData({ ...formData, invitationMessage: e.target.value })}
+              rows={4}
+              placeholder="Mensagem personalizada que será enviada junto com o convite via WhatsApp ou Email..."
+              disabled={!permissions.canEdit}
+              readOnly={!permissions.canEdit}
+            />
+            <p className="text-xs text-muted-foreground">
+              Esta mensagem será incluída nos convites enviados por WhatsApp e Email.
+            </p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading || !permissions.canEdit}>
