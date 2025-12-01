@@ -66,7 +66,7 @@ const AdminLayout = () => {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col h-full">
-          <header className="h-16 border-b border-border/40 bg-card/90 shadow-md flex items-center justify-between px-6 shrink-0">
+          <header className="h-16 border-b border-primary/20 bg-gradient-to-r from-card/95 via-secondary/30 to-card/95 shadow-md flex items-center justify-between px-6 shrink-0">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="flex items-center gap-3">
