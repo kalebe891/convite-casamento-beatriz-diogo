@@ -106,7 +106,7 @@ const WeddingDetailsForm = ({ permissions }: WeddingDetailsFormProps) => {
   return (
     <Card className="max-w-3xl mx-auto shadow-elegant">
       <CardHeader>
-        // <CardTitle className="text-3xl font-serif">Detalhes do Casamento</CardTitle>
+        {/* <CardTitle className="text-3xl font-serif">Detalhes do Casamento</CardTitle>*/}
         <CardDescription>Gerencie as informações a serem exibidas na tela incial</CardDescription>
       </CardHeader>
       <CardContent>
