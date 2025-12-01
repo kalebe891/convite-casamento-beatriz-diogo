@@ -51,7 +51,7 @@ const PlaylistManager = ({ permissions }: PlaylistManagerProps) => {
     }
   };
 
-  const handleTogglePlaylistSection = async (checked: boolean) => {
+  const handleTogglePlaylistSection = async (newValue: boolean) => {
     if (!permissions.canPublish) {
       toast({
         title: "Sem permissão",
@@ -63,27 +63,27 @@ const PlaylistManager = ({ permissions }: PlaylistManagerProps) => {
 
     if (!weddingId) return;
 
-    try {
-      const { error } = await supabase
-        .from("wedding_details")
-        .update({ show_playlist_section: checked })
-        .eq("id", weddingId);
+    const { error } = await supabase
+      .from("wedding_details")
+      .update({ show_playlist_section: newValue })
+      .eq("id", weddingId);
 
-      if (error) throw error;
+    if (error) {
+      toast({ title: "Erro", description: getSafeErrorMessage(error), variant: "destructive" });
+    } else {
+      toast({
+        title: "Atualizado",
+        description: `Seção de playlist ${newValue ? 'exibida' : 'oculta'} na página pública`,
+      });
 
-      setShowPlaylistSection(checked);
-      toast({
-        title: "Configuração atualizada!",
-        description: checked
-          ? "Seção playlist agora está visível na página pública"
-          : "Seção playlist foi ocultada da página pública",
+      await logAdminAction({
+        action: "update",
+        tableName: "wedding_details",
+        recordId: weddingId,
+        newData: { show_playlist_section: newValue },
       });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: getSafeErrorMessage(error),
-        variant: "destructive",
-      });
+
+      setShowPlaylistSection(newValue);
     }
   };
 
