@@ -74,9 +74,9 @@ const WeddingSettingsForm = ({ permissions }: WeddingSettingsFormProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configurações da Página Pública</CardTitle>
+        <CardTitle>Configurações de visibilidade de Convidados</CardTitle>
         <CardDescription>
-          Configure como os convidados verão seu convite online
+          Configure exibição dos convidados na pagina inicial
         </CardDescription>
       </CardHeader>
       <CardContent>
